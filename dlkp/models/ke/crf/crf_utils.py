@@ -11,7 +11,9 @@ import torch
 VITERBI_DECODING = Tuple[List[int], float]  # a list of tags, and a viterbi score
 
 
-def allowed_transitions(constraint_type: str, labels: Dict[int, str]) -> List[Tuple[int, int]]:
+def allowed_transitions(
+    constraint_type: str, labels: Dict[int, str]
+) -> List[Tuple[int, int]]:
     """
     Given labels and a constraint type, returns the allowed transitions. It will
     additionally include transitions for the start and end states, which are used
@@ -30,7 +32,10 @@ def allowed_transitions(constraint_type: str, labels: Dict[int, str]) -> List[Tu
     num_labels = len(labels)
     start_tag = num_labels
     end_tag = num_labels + 1
-    labels_with_boundaries = list(labels.items()) + [(start_tag, "START"), (end_tag, "END")]
+    labels_with_boundaries = list(labels.items()) + [
+        (start_tag, "START"),
+        (end_tag, "END"),
+    ]
 
     allowed = []
     for from_label_index, from_label in labels_with_boundaries:
@@ -47,7 +52,9 @@ def allowed_transitions(constraint_type: str, labels: Dict[int, str]) -> List[Tu
             else:
                 to_tag = to_label[0]
                 to_entity = to_label[1:]
-            if is_transition_allowed(constraint_type, from_tag, from_entity, to_tag, to_entity):
+            if is_transition_allowed(
+                constraint_type, from_tag, from_entity, to_tag, to_entity
+            ):
                 allowed.append((from_label_index, to_label_index))
     return allowed
 
@@ -97,7 +104,9 @@ def is_transition_allowed(
                 from_tag in ("O", "L", "U") and to_tag in ("O", "B", "U"),
                 # B-x can only transition to I-x or L-x
                 # I-x can only transition to I-x or L-x
-                from_tag in ("B", "I") and to_tag in ("I", "L") and from_entity == to_entity,
+                from_tag in ("B", "I")
+                and to_tag in ("I", "L")
+                and from_entity == to_entity,
             ]
         )
     elif constraint_type == "BIO":
@@ -148,7 +157,9 @@ def is_transition_allowed(
         print("error in constrint type")
 
 
-def logsumexp(tensor: torch.Tensor, dim: int = -1, keepdim: bool = False) -> torch.Tensor:
+def logsumexp(
+    tensor: torch.Tensor, dim: int = -1, keepdim: bool = False
+) -> torch.Tensor:
     """
     A numerically stable computation of logsumexp. This is mathematically equivalent to
     `tensor.exp().sum(dim, keep=keepdim).log()`.  This function is typically used for summing log
@@ -167,8 +178,6 @@ def logsumexp(tensor: torch.Tensor, dim: int = -1, keepdim: bool = False) -> tor
     else:
         stable_vec = tensor - max_score.unsqueeze(dim)
     return max_score + (stable_vec.exp().sum(dim, keepdim=keepdim)).log()
-
-
 
 
 def viterbi_decode(
@@ -223,7 +232,9 @@ def viterbi_decode(
     elif top_k >= 1:
         flatten_output = False
     else:
-        raise ValueError(f"top_k must be either None or an integer >=1. Instead received {top_k}")
+        raise ValueError(
+            f"top_k must be either None or an integer >=1. Instead received {top_k}"
+        )
 
     sequence_length, num_tags = list(tag_sequence.size())
 
