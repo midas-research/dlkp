@@ -22,11 +22,7 @@ _LICENSE = ""
 
 # TODO: Add link to the official dataset URLs here
 
-_URLS = {
-    "test": "test.jsonl",
-    "train": "train.jsonl",
-    "valid": "valid.jsonl"
-}
+_URLS = {"test": "test.jsonl", "train": "train.jsonl", "valid": "valid.jsonl"}
 
 
 # TODO: Name of the dataset usually match the script name with CamelCase instead of snake_case
@@ -36,28 +32,46 @@ class TestLDKP(datasets.GeneratorBasedBuilder):
     VERSION = datasets.Version("0.1")
 
     BUILDER_CONFIGS = [
-        datasets.BuilderConfig(name="extraction", version=VERSION,
-                               description="This part of my dataset covers extraction"),
-        datasets.BuilderConfig(name="generation", version=VERSION,
-                               description="This part of my dataset covers generation"),
-        datasets.BuilderConfig(name="raw", version=VERSION, description="This part of my dataset covers the raw dataset"),
-        datasets.BuilderConfig(name="ldkp_generation", version=VERSION,
-                               description="This part of my dataset covers abstract only"),
-        datasets.BuilderConfig(name="ldkp_extraction", version=VERSION,
-                               description="This part of my dataset covers abstract only"),
-
+        datasets.BuilderConfig(
+            name="extraction",
+            version=VERSION,
+            description="This part of my dataset covers extraction",
+        ),
+        datasets.BuilderConfig(
+            name="generation",
+            version=VERSION,
+            description="This part of my dataset covers generation",
+        ),
+        datasets.BuilderConfig(
+            name="raw",
+            version=VERSION,
+            description="This part of my dataset covers the raw dataset",
+        ),
+        datasets.BuilderConfig(
+            name="ldkp_generation",
+            version=VERSION,
+            description="This part of my dataset covers abstract only",
+        ),
+        datasets.BuilderConfig(
+            name="ldkp_extraction",
+            version=VERSION,
+            description="This part of my dataset covers abstract only",
+        ),
     ]
 
     DEFAULT_CONFIG_NAME = "extraction"
 
     def _info(self):
-        if self.config.name == "extraction" or self.config.name == "ldkp_extraction":  # This is the name of the configuration selected in BUILDER_CONFIGS above
+        if (
+            self.config.name == "extraction" or self.config.name == "ldkp_extraction"
+        ):  # This is the name of the configuration selected in BUILDER_CONFIGS above
             features = datasets.Features(
                 {
                     "id": datasets.Value("int64"),
                     "document": datasets.features.Sequence(datasets.Value("string")),
-                    "doc_bio_tags": datasets.features.Sequence(datasets.Value("string"))
-
+                    "doc_bio_tags": datasets.features.Sequence(
+                        datasets.Value("string")
+                    ),
                 }
             )
         elif self.config.name == "generation" or self.config.name == "ldkp_generation":
@@ -65,9 +79,12 @@ class TestLDKP(datasets.GeneratorBasedBuilder):
                 {
                     "id": datasets.Value("int64"),
                     "document": datasets.features.Sequence(datasets.Value("string")),
-                    "extractive_keyphrases": datasets.features.Sequence(datasets.Value("string")),
-                    "abstractive_keyphrases": datasets.features.Sequence(datasets.Value("string"))
-
+                    "extractive_keyphrases": datasets.features.Sequence(
+                        datasets.Value("string")
+                    ),
+                    "abstractive_keyphrases": datasets.features.Sequence(
+                        datasets.Value("string")
+                    ),
                 }
             )
         else:
@@ -75,16 +92,25 @@ class TestLDKP(datasets.GeneratorBasedBuilder):
                 {
                     "id": datasets.Value("int64"),
                     "document": datasets.features.Sequence(datasets.Value("string")),
-                    "doc_bio_tags": datasets.features.Sequence(datasets.Value("string")),
-                    "extractive_keyphrases": datasets.features.Sequence(datasets.Value("string")),
-                    "abstractive_keyphrases": datasets.features.Sequence(datasets.Value("string")),
+                    "doc_bio_tags": datasets.features.Sequence(
+                        datasets.Value("string")
+                    ),
+                    "extractive_keyphrases": datasets.features.Sequence(
+                        datasets.Value("string")
+                    ),
+                    "abstractive_keyphrases": datasets.features.Sequence(
+                        datasets.Value("string")
+                    ),
                     "other_metadata": datasets.features.Sequence(
                         {
-                            "text": datasets.features.Sequence(datasets.Value("string")),
-                            "bio_tags": datasets.features.Sequence(datasets.Value("string"))
+                            "text": datasets.features.Sequence(
+                                datasets.Value("string")
+                            ),
+                            "bio_tags": datasets.features.Sequence(
+                                datasets.Value("string")
+                            ),
                         }
-                    )
-
+                    ),
                 }
             )
         return datasets.DatasetInfo(
@@ -107,23 +133,20 @@ class TestLDKP(datasets.GeneratorBasedBuilder):
                 name=datasets.Split.TRAIN,
                 # These kwargs will be passed to _generate_examples
                 gen_kwargs={
-                    "filepath": data_dir['train'],
+                    "filepath": data_dir["train"],
                     "split": "train",
                 },
             ),
             datasets.SplitGenerator(
                 name=datasets.Split.TEST,
                 # These kwargs will be passed to _generate_examples
-                gen_kwargs={
-                    "filepath": data_dir['test'],
-                    "split": "test"
-                },
+                gen_kwargs={"filepath": data_dir["test"], "split": "test"},
             ),
             datasets.SplitGenerator(
                 name=datasets.Split.VALIDATION,
                 # These kwargs will be passed to _generate_examples
                 gen_kwargs={
-                    "filepath": data_dir['valid'],
+                    "filepath": data_dir["valid"],
                     "split": "valid",
                 },
             ),
@@ -137,36 +160,37 @@ class TestLDKP(datasets.GeneratorBasedBuilder):
                 if self.config.name == "extraction":
                     # Yields examples as (key, example) tuples
                     yield key, {
-                        "id": data['paper_id'],
+                        "id": data["paper_id"],
                         "document": data["document"],
-                        "doc_bio_tags": data["doc_bio_tags"]
+                        "doc_bio_tags": data["doc_bio_tags"],
                     }
                 elif self.config.name == "ldkp_extraction":
                     yield key, {
-                        "id": data['paper_id'],
-                        "document": data["document"] + data["other_metadata"]['text'],
-                        "doc_bio_tags": data["document_tags"] + data["other_metadata"]['bio_tags']
+                        "id": data["paper_id"],
+                        "document": data["document"] + data["other_metadata"]["text"],
+                        "doc_bio_tags": data["document_tags"]
+                        + data["other_metadata"]["bio_tags"],
                     }
                 elif self.config.name == "ldkp_generation":
                     yield key, {
-                        "id": data['paper_id'],
-                        "document": data["document"] + data["other_metadata"]['text'],
+                        "id": data["paper_id"],
+                        "document": data["document"] + data["other_metadata"]["text"],
                         "extractive_keyphrases": data["extractive_keyphrases"],
-                        "abstractive_keyphrases": data["abstractive_keyphrases"]
+                        "abstractive_keyphrases": data["abstractive_keyphrases"],
                     }
                 elif self.config.name == "generation":
                     yield key, {
-                        "id": data['paper_id'],
+                        "id": data["paper_id"],
                         "document": data["document"],
                         "extractive_keyphrases": data["extractive_keyphrases"],
-                        "abstractive_keyphrases": data["abstractive_keyphrases"]
+                        "abstractive_keyphrases": data["abstractive_keyphrases"],
                     }
                 else:
                     yield key, {
-                        "id": data['paper_id'],
+                        "id": data["paper_id"],
                         "document": data["document"],
                         "doc_bio_tags": data["doc_bio_tags"],
                         "extractive_keyphrases": data["extractive_keyphrases"],
                         "abstractive_keyphrases": data["abstractive_keyphrases"],
-                        "other_metadata": data["other_metadata"]
+                        "other_metadata": data["other_metadata"],
                     }

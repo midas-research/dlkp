@@ -75,8 +75,7 @@ TRAINER_DICT = {
 def main_run_kpe(model_args, data_args, training_args):
 
     # See all possible arguments in src/transformers/training_args.py
-    # or by passing the --help flag to this script.
-    # We now keep distinct sets of args, for a cleaner separation of concerns.
+   
 
     # parser = HfArgumentParser((ModelArguments, DataTrainingArguments, TrainingArguments))
     # if len(sys.argv) == 2 and sys.argv[1].endswith(".json"):
@@ -112,8 +111,9 @@ def main_run_kpe(model_args, data_args, training_args):
         handlers=[logging.StreamHandler(sys.stdout)],
     )
     logger.setLevel(
-        logging.INFO if is_main_process(training_args.local_rank) else logging.WARN
+        logging.INFO if is_main_process(training_args.local_rank) else logging.INFO
     )
+    # logger.set_global_logging_level(logging.INFO)
 
     # Log on each process the small summary:
     logger.warning(
@@ -147,11 +147,13 @@ def main_run_kpe(model_args, data_args, training_args):
         data_files = {}
         if data_args.train_file is not None:
             data_files["train"] = data_args.train_file
+            extension = data_args.train_file.split(".")[-1]
         if data_args.validation_file is not None:
             data_files["validation"] = data_args.validation_file
+            extension = data_args.validation_file.split(".")[-1]
         if data_args.test_file is not None:
             data_files["test"] = data_args.test_file
-        extension = data_args.train_file.split(".")[-1]
+            extension = data_args.test_file.split(".")[-1]
         datasets = load_dataset(
             extension, data_files=data_files
         )  ##CR get dataset in here
@@ -182,7 +184,11 @@ def main_run_kpe(model_args, data_args, training_args):
         # No need to convert the labels since they are already ints.
         label_to_id = {i: i for i in range(len(label_list))}
     else:
-        label_list = get_label_list(datasets["train"][label_column_name])
+        label_list = get_label_list(
+            datasets["train"][label_column_name]
+            if training_args.do_train
+            else datasets["validation"][label_column_name]
+        )
         label_to_id = {l: i for i, l in enumerate(label_list)}
     num_labels = len(label_list)
     print(label_to_id)
@@ -218,9 +224,9 @@ def main_run_kpe(model_args, data_args, training_args):
         config=config,
         cache_dir=model_args.cache_dir,
     )
-    model.freeze_encoder_layer()
+    # model.freeze_encoder_layer()
     print("model")
-    print(model)
+    # print(model)
     if tokenizer.pad_token is None:
 
         tokenizer.pad_token = tokenizer.eos_token
@@ -276,7 +282,12 @@ def main_run_kpe(model_args, data_args, training_args):
                 previous_word_idx = word_idx
 
             labels.append(label_ids)
+        if data_args.task_name == "guided":
+            tokenized_inputs["guide_embed"] = examples["guide_embed"]
         tokenized_inputs["labels"] = labels
+        # tokenized_inputs['paper_id']= examples['paper_id']
+        # tokenized_inputs['extractive_keyphrases']= examples['extractive_keyphrases']
+
         return tokenized_inputs
 
     tokenized_datasets = datasets.map(
@@ -293,6 +304,7 @@ def main_run_kpe(model_args, data_args, training_args):
     )
 
     from seqeval.metrics import accuracy_score, f1_score, precision_score, recall_score
+    from seqeval.scheme import IOB2, IOB1
 
     def compute_metrics(p):
         predictions, labels = p
@@ -312,13 +324,22 @@ def main_run_kpe(model_args, data_args, training_args):
 
         # results = metric.compute(predictions=true_predictions, references=true_labels)
         results = {}
-        results["overall_precision"] = precision_score(true_labels, true_predictions)
-        results["overall_recall"] = recall_score(true_labels, true_predictions)
-        results["overall_f1"] = f1_score(true_labels, true_predictions)
+        # print("cal precisi")
+        results["overall_precision"] = precision_score(
+            true_labels, true_predictions, mode="strict", scheme=IOB2
+        )
+        results["overall_recall"] = recall_score(
+            true_labels, true_predictions, mode="strict", scheme=IOB2
+        )
+        # print("cal f1")
+        results["overall_f1"] = f1_score(
+            true_labels, true_predictions, mode="strict", scheme=IOB2
+        )
         results["overall_accuracy"] = accuracy_score(true_labels, true_predictions)
         if data_args.return_entity_level_metrics:
             # Unpack nested dictionaries
             final_results = {}
+            # print("cal entity level mat")
             for key, value in results.items():
                 if isinstance(value, dict):
                     for n, v in value.items():
@@ -335,6 +356,40 @@ def main_run_kpe(model_args, data_args, training_args):
             }
 
     # Initialize our Trainer
+    # metric = load_metric("seqeval")
+
+    # def compute_metrics(p):
+    #     predictions, labels = p
+    #     predictions = np.argmax(predictions, axis=2)
+
+    #     # Remove ignored index (special tokens)
+    #     true_predictions = [
+    #         [label_list[p] for (p, l) in zip(prediction, label) if l != -100]
+    #         for prediction, label in zip(predictions, labels)
+    #     ]
+    #     true_labels = [
+    #         [label_list[l] for (p, l) in zip(prediction, label) if l != -100]
+    #         for prediction, label in zip(predictions, labels)
+    #     ]
+
+    #     results = metric.compute(predictions=true_predictions, references=true_labels)
+    #     if data_args.return_entity_level_metrics:
+    #         # Unpack nested dictionaries
+    #         final_results = {}
+    #         for key, value in results.items():
+    #             if isinstance(value, dict):
+    #                 for n, v in value.items():
+    #                     final_results[f"{key}_{n}"] = v
+    #             else:
+    #                 final_results[key] = value
+    #         return final_results
+    #     else:
+    #         return {
+    #             "precision": results["overall_precision"],
+    #             "recall": results["overall_recall"],
+    #             "f1": results["overall_f1"],
+    #             "accuracy": results["overall_accuracy"],
+    #         }
 
     trainer = TRAINER_DICT[data_args.task_name](
         model=model,
@@ -374,66 +429,19 @@ def main_run_kpe(model_args, data_args, training_args):
 
     # Evaluation
     results = {}
-    if training_args.do_eval:
+    # if training_args.do_eval:
 
-        logger.info("*** Evaluate ***")
+    #     logger.info("*** Evaluate ***")
 
-        results = trainer.evaluate()
+    #     results = trainer.evaluate()
 
-        output_eval_file = os.path.join(
-            training_args.output_dir, "eval_results_KPE.txt"
-        )
-        if trainer.is_world_process_zero():
-            with open(output_eval_file, "w") as writer:
-                logger.info("***** Eval results *****")
-                for key, value in results.items():
-                    logger.info(f"  {key} = {value}")
-                    writer.write(f"{key} = {value}\n")
-
-    def get_kp_from_BIO(examples, prediction):
-        kps = []
-        for i in range(len(prediction)):
-            ids = examples["input_ids"][i]
-
-            tags = prediction[i]
-            # print(tags)
-            current_kps = []
-            ckp = []
-            for i, tag in enumerate(tags):
-                id = ids[i]
-
-                if tag == "O" and len(ckp) > 0:
-
-                    current_kps.append(ckp)
-                    ckp = []
-                elif tag == "B":
-                    # print(ckp, tag)
-                    if tokenizer.convert_ids_to_tokens(id).startswith("##"):
-                        ckp.append(id)
-                    else:
-                        if len(ckp) > 0:
-                            current_kps.append(ckp)
-                            ckp = []
-
-                        ckp.append(id)
-                        # print(ckp, id)
-
-                elif tag == "I" and len(ckp) > 0:
-                    ckp.append(id)
-            decoded_kps = []
-            if len(ckp) > 0:
-                current_kps.append(ckp)
-            if len(current_kps) > 0:
-                decoded_kps = tokenizer.batch_decode(
-                    current_kps,
-                    skip_special_tokens=True,
-                    clean_up_tokenization_spaces=True,
-                )
-                # print(decoded_kps)
-            kps.append(decoded_kps)
-
-        # examples['predicted_kp']= kps
-        return kps
+    #     output_eval_file = os.path.join(training_args.output_dir, "eval_results_KPE.txt")
+    #     if trainer.is_world_process_zero():
+    #         with open(output_eval_file, "w") as writer:
+    #             logger.info("***** Eval results *****")
+    #             for key, value in results.items():
+    #                 logger.info(f"  {key} = {value}")
+    #                 writer.write(f"{key} = {value}\n")
 
     # Predict
     if training_args.do_predict:
@@ -449,6 +457,10 @@ def main_run_kpe(model_args, data_args, training_args):
             [label_list[p] for (p, l) in zip(prediction, label) if l != -100]
             for prediction, label in zip(predictions, labels)
         ]
+        true_labels = [
+            [label_list[l] for (p, l) in zip(prediction, label) if l != -100]
+            for prediction, label in zip(predictions, labels)
+        ]
 
         output_test_results_file = os.path.join(
             training_args.output_dir, "test_results.txt"
@@ -460,18 +472,102 @@ def main_run_kpe(model_args, data_args, training_args):
                     writer.write(f"{key} = {value}\n")
 
         # Save predictions
+        def get_kp_from_BIO(examples, i):
+            # kps= []
+            # for i in range(len(prediction)):
+            ids = examples["input_ids"]
+            # print(examples.keys())
+
+            # print(tags)
+            def mmkp(tag_):
+                current_kps = []
+                ckp = []
+                prev_tag = None
+                for j, tag in enumerate(tag_):
+                    id = ids[j]
+
+                    if tag == "O" and len(ckp) > 0:
+
+                        current_kps.append(ckp)
+                        ckp = []
+                    elif tag == "B":
+                        # print(ckp, tag)
+                        if (
+                            tokenizer.convert_ids_to_tokens(id).startswith("##")
+                            or prev_tag == "B"
+                        ):
+                            ckp.append(id)
+                        else:
+                            if len(ckp) > 0:
+                                current_kps.append(ckp)
+                                ckp = []
+
+                            ckp.append(id)
+                            # print(ckp, id)
+
+                    elif tag == "I" and len(ckp) > 0:
+                        ckp.append(id)
+                    prev_tag = tag
+                decoded_kps = []
+                if len(ckp) > 0:
+                    current_kps.append(ckp)
+                if len(current_kps) > 0:
+                    decoded_kps = tokenizer.batch_decode(
+                        current_kps,
+                        skip_special_tokens=True,
+                        clean_up_tokenization_spaces=True,
+                    )
+                    # print(decoded_kps)
+                return decoded_kps
+
+            tags = true_predictions[i]
+            decoded_kps = mmkp(tags)
+
+            ttgs = true_labels[i]
+            eekp = mmkp(ttgs)
+
+            # examples['kp_predicted']= decoded_kps
+            examples["kp_predicted"] = list(dict.fromkeys(decoded_kps))
+            examples["eekp"] = list(dict.fromkeys(eekp))
+            # examples['eekp']= eekp
+            # else:
+            #     examples['kp_predicted']= ['<dummy_kp>']
+            examples["id"] = i
+            return examples
+
+        import pandas as pd
+
         output_test_predictions_file = os.path.join(
-            training_args.output_dir, "test_predictions.txt"
+            training_args.output_dir, "test_predictions.csv"
+        )
+        output_test_predictions_BIO_file = os.path.join(
+            training_args.output_dir, "test_predictions_BIO.txt"
         )
         if trainer.is_world_process_zero():
-            # # test_dataset['predicted_tags']= true_predictions
-            # # test_dataset=test_dataset.map(get_kp_from_BIO,batched=True,
-            # num_proc=data_args.preprocessing_num_workers,
-            # load_from_cache_file=not data_args.overwrite_cache,
-            #  )
-            gen_kps = get_kp_from_BIO(test_dataset, true_predictions)
-            with open(output_test_predictions_file, "w") as writer:
-                for prediction in gen_kps:
-                    writer.write(" <kp_sep> ".join(prediction) + "\n")
+            print(test_dataset, len(test_dataset["paper_id"]))
+            ppid = test_dataset["paper_id"]
+            # ekp= test_dataset['extractive_keyphrases']
+
+            test_dataset = test_dataset.map(
+                get_kp_from_BIO,
+                num_proc=data_args.preprocessing_num_workers,
+                with_indices=True,
+            )
+            #  input_columns= ['paper_id','input_ids','extractive_keyphrases']
+            print(test_dataset, " agian")
+            df = pd.DataFrame.from_dict(
+                {
+                    "id": ppid,
+                    "extractive_keyphrase": test_dataset["eekp"],
+                    "keyphrases": test_dataset["kp_predicted"],
+                }
+            )
+            df.to_csv(output_test_predictions_file, index=False)
+
+            # get BIO tag files
+
+            with open(output_test_predictions_BIO_file, "w") as writer:
+                for prediction in true_predictions:
+                    writer.write(" ".join(prediction) + "\n")
 
     return results

@@ -27,11 +27,7 @@ _LICENSE = "Apache License 2.0"
 
 # TODO: Add link to the official dataset URLs here
 
-_URLS = {
-    "test": "test.jsonl",
-    "train": "train.jsonl",
-    "valid": "valid.jsonl"
-}
+_URLS = {"test": "test.jsonl", "train": "train.jsonl", "valid": "valid.jsonl"}
 
 
 # TODO: Name of the dataset usually match the script name with CamelCase instead of snake_case
@@ -41,23 +37,36 @@ class KPTimes(datasets.GeneratorBasedBuilder):
     VERSION = datasets.Version("0.0.1")
 
     BUILDER_CONFIGS = [
-        datasets.BuilderConfig(name="extraction", version=VERSION,
-                               description="This part of my dataset covers extraction"),
-        datasets.BuilderConfig(name="generation", version=VERSION,
-                               description="This part of my dataset covers generation"),
-        datasets.BuilderConfig(name="raw", version=VERSION, description="This part of my dataset covers the raw dataset"),
+        datasets.BuilderConfig(
+            name="extraction",
+            version=VERSION,
+            description="This part of my dataset covers extraction",
+        ),
+        datasets.BuilderConfig(
+            name="generation",
+            version=VERSION,
+            description="This part of my dataset covers generation",
+        ),
+        datasets.BuilderConfig(
+            name="raw",
+            version=VERSION,
+            description="This part of my dataset covers the raw dataset",
+        ),
     ]
 
     DEFAULT_CONFIG_NAME = "extraction"
 
     def _info(self):
-        if self.config.name == "extraction":  # This is the name of the configuration selected in BUILDER_CONFIGS above
+        if (
+            self.config.name == "extraction"
+        ):  # This is the name of the configuration selected in BUILDER_CONFIGS above
             features = datasets.Features(
                 {
                     "id": datasets.Value("string"),
                     "document": datasets.features.Sequence(datasets.Value("string")),
-                    "doc_bio_tags": datasets.features.Sequence(datasets.Value("string"))
-
+                    "doc_bio_tags": datasets.features.Sequence(
+                        datasets.Value("string")
+                    ),
                 }
             )
         elif self.config.name == "generation":
@@ -65,9 +74,12 @@ class KPTimes(datasets.GeneratorBasedBuilder):
                 {
                     "id": datasets.Value("string"),
                     "document": datasets.features.Sequence(datasets.Value("string")),
-                    "extractive_keyphrases": datasets.features.Sequence(datasets.Value("string")),
-                    "abstractive_keyphrases": datasets.features.Sequence(datasets.Value("string"))
-
+                    "extractive_keyphrases": datasets.features.Sequence(
+                        datasets.Value("string")
+                    ),
+                    "abstractive_keyphrases": datasets.features.Sequence(
+                        datasets.Value("string")
+                    ),
                 }
             )
         else:
@@ -75,9 +87,15 @@ class KPTimes(datasets.GeneratorBasedBuilder):
                 {
                     "id": datasets.Value("string"),
                     "document": datasets.features.Sequence(datasets.Value("string")),
-                    "doc_bio_tags": datasets.features.Sequence(datasets.Value("string")),
-                    "extractive_keyphrases": datasets.features.Sequence(datasets.Value("string")),
-                    "abstractive_keyphrases": datasets.features.Sequence(datasets.Value("string")),
+                    "doc_bio_tags": datasets.features.Sequence(
+                        datasets.Value("string")
+                    ),
+                    "extractive_keyphrases": datasets.features.Sequence(
+                        datasets.Value("string")
+                    ),
+                    "abstractive_keyphrases": datasets.features.Sequence(
+                        datasets.Value("string")
+                    ),
                     "other_metadata": datasets.features.Sequence(
                         {
                             "id": datasets.Value("string"),
@@ -87,8 +105,7 @@ class KPTimes(datasets.GeneratorBasedBuilder):
                             "abstract": datasets.Value("string"),
                             "keyword": datasets.Value("string"),
                         }
-                    )
-
+                    ),
                 }
             )
         return datasets.DatasetInfo(
@@ -111,23 +128,20 @@ class KPTimes(datasets.GeneratorBasedBuilder):
                 name=datasets.Split.TRAIN,
                 # These kwargs will be passed to _generate_examples
                 gen_kwargs={
-                    "filepath": data_dir['train'],
+                    "filepath": data_dir["train"],
                     "split": "train",
                 },
             ),
             datasets.SplitGenerator(
                 name=datasets.Split.TEST,
                 # These kwargs will be passed to _generate_examples
-                gen_kwargs={
-                    "filepath": data_dir['test'],
-                    "split": "test"
-                },
+                gen_kwargs={"filepath": data_dir["test"], "split": "test"},
             ),
             datasets.SplitGenerator(
                 name=datasets.Split.VALIDATION,
                 # These kwargs will be passed to _generate_examples
                 gen_kwargs={
-                    "filepath": data_dir['valid'],
+                    "filepath": data_dir["valid"],
                     "split": "valid",
                 },
             ),
@@ -141,23 +155,23 @@ class KPTimes(datasets.GeneratorBasedBuilder):
                 if self.config.name == "extraction":
                     # Yields examples as (key, example) tuples
                     yield key, {
-                        "id": data.get('paper_id'),
+                        "id": data.get("paper_id"),
                         "document": data["document"],
-                        "doc_bio_tags": data.get("doc_bio_tags")
+                        "doc_bio_tags": data.get("doc_bio_tags"),
                     }
                 elif self.config.name == "generation":
                     yield key, {
-                        "id": data.get('paper_id'),
+                        "id": data.get("paper_id"),
                         "document": data["document"],
                         "extractive_keyphrases": data.get("extractive_keyphrases"),
-                        "abstractive_keyphrases": data.get("abstractive_keyphrases")
+                        "abstractive_keyphrases": data.get("abstractive_keyphrases"),
                     }
                 else:
                     yield key, {
-                        "id": data.get('paper_id'),
+                        "id": data.get("paper_id"),
                         "document": data["document"],
                         "doc_bio_tags": data.get("doc_bio_tags"),
                         "extractive_keyphrases": data.get("extractive_keyphrases"),
                         "abstractive_keyphrases": data.get("abstractive_keyphrases"),
-                        "other_metadata": data["other_metadata"]
+                        "other_metadata": data["other_metadata"],
                     }
