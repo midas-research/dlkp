@@ -75,7 +75,6 @@ TRAINER_DICT = {
 def main_run_kpe(model_args, data_args, training_args):
 
     # See all possible arguments in src/transformers/training_args.py
-   
 
     # parser = HfArgumentParser((ModelArguments, DataTrainingArguments, TrainingArguments))
     # if len(sys.argv) == 2 and sys.argv[1].endswith(".json"):
@@ -110,9 +109,7 @@ def main_run_kpe(model_args, data_args, training_args):
         datefmt="%m/%d/%Y %H:%M:%S",
         handlers=[logging.StreamHandler(sys.stdout)],
     )
-    logger.setLevel(
-        logging.INFO if is_main_process(training_args.local_rank) else logging.INFO
-    )
+    logger.setLevel(logging.INFO)
     # logger.set_global_logging_level(logging.INFO)
 
     # Log on each process the small summary:
@@ -130,16 +127,6 @@ def main_run_kpe(model_args, data_args, training_args):
     # Set seed before initializing model.
     set_seed(training_args.seed)
 
-    # Get the datasets: you can either provide your own CSV/JSON/TXT training and evaluation files (see below)
-    # or just provide the name of one of the public datasets available on the hub at https://huggingface.co/datasets/
-    # (the dataset will be downloaded automatically from the datasets Hub).
-    #
-    # For CSV/JSON files, this script will use the column called 'text' or the first column if no column called
-    # 'text' is found. You can easily tweak this behavior (see below).
-    #
-    # In distributed training, the load_dataset function guarantee that only one local process can concurrently
-    # download the dataset.
-    ## get dataset in here
     if data_args.dataset_name is not None:
         # Downloading and loading a dataset from the hub.
         datasets = load_dataset(data_args.dataset_name, data_args.dataset_config_name)
@@ -154,12 +141,7 @@ def main_run_kpe(model_args, data_args, training_args):
         if data_args.test_file is not None:
             data_files["test"] = data_args.test_file
             extension = data_args.test_file.split(".")[-1]
-        datasets = load_dataset(
-            extension, data_files=data_files
-        )  ##CR get dataset in here
-    # See more about loading any type of standard or custom dataset (from files, python dict, pandas DataFrame, etc) at
-    # https://huggingface.co/docs/datasets/loading_datasets.html.
-
+        datasets = load_dataset(extension, data_files=data_files)
     if training_args.do_train:
         column_names = datasets["train"].column_names
         features = datasets["train"].features
@@ -302,58 +284,6 @@ def main_run_kpe(model_args, data_args, training_args):
     data_collator = DataCollatorForTokenClassification(
         tokenizer, pad_to_multiple_of=8 if training_args.fp16 else None
     )
-
-    from seqeval.metrics import accuracy_score, f1_score, precision_score, recall_score
-    from seqeval.scheme import IOB2, IOB1
-
-    def compute_metrics(p):
-        predictions, labels = p
-        # print(predictions.shape, labels.shape)
-        # if model_args.use_CRF is False:
-        predictions = np.argmax(predictions, axis=2)
-
-        # Remove ignored index (special tokens)
-        true_predictions = [
-            [label_list[p] for (p, l) in zip(prediction, label) if l != -100]
-            for prediction, label in zip(predictions, labels)
-        ]
-        true_labels = [
-            [label_list[l] for (p, l) in zip(prediction, label) if l != -100]
-            for prediction, label in zip(predictions, labels)
-        ]
-
-        # results = metric.compute(predictions=true_predictions, references=true_labels)
-        results = {}
-        # print("cal precisi")
-        results["overall_precision"] = precision_score(
-            true_labels, true_predictions, mode="strict", scheme=IOB2
-        )
-        results["overall_recall"] = recall_score(
-            true_labels, true_predictions, mode="strict", scheme=IOB2
-        )
-        # print("cal f1")
-        results["overall_f1"] = f1_score(
-            true_labels, true_predictions, mode="strict", scheme=IOB2
-        )
-        results["overall_accuracy"] = accuracy_score(true_labels, true_predictions)
-        if data_args.return_entity_level_metrics:
-            # Unpack nested dictionaries
-            final_results = {}
-            # print("cal entity level mat")
-            for key, value in results.items():
-                if isinstance(value, dict):
-                    for n, v in value.items():
-                        final_results[f"{key}_{n}"] = v
-                else:
-                    final_results[key] = value
-            return final_results
-        else:
-            return {
-                "precision": results["overall_precision"],
-                "recall": results["overall_recall"],
-                "f1": results["overall_f1"],
-                "accuracy": results["overall_accuracy"],
-            }
 
     # Initialize our Trainer
     # metric = load_metric("seqeval")
