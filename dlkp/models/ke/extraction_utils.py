@@ -49,7 +49,7 @@ class ModelArguments:
         default=False,
         metadata={"help": "wether to use CRF on top of the classifier"},
     )
-    use_BiLSTM: bool = field(
+    use_BiLSTM: bool = field(  # not necessary
         default=False,
         metadata={"help": "use BiLSTM in sequence classification"},
     )

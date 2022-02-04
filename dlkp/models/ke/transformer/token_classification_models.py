@@ -89,6 +89,3 @@ class ReformerForTokenClassification(ReformerPreTrainedModel):
         # if not return_dict:
         output = (logits,) + outputs[2:]
         return ((loss,) + output) if loss is not None else output
-
-
-s

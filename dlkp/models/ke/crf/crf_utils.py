@@ -1,14 +1,18 @@
 """
 Conditional random field utilis file 
 """
-from typing import List, Tuple, Dict, Union
+from typing import List, Tuple, Dict, Union, Optional
 
 import torch
+import math
+import logging
 
 # from allennlp.common.checks import ConfigurationError
 # import allennlp.nn.util as util
 
 VITERBI_DECODING = Tuple[List[int], float]  # a list of tags, and a viterbi score
+
+logger = logging.get_logger(__name__)
 
 
 def allowed_transitions(
