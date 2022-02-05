@@ -183,6 +183,7 @@ def run_kpe(model_args, data_args, training_args):
             else datasets["validation"][label_column_name]
         )
         label_to_id = {l: i for i, l in enumerate(label_list)}
+    label_to_id = {"B": 0, "I": 1, "O": 2}
     num_labels = len(label_list)
     print("label to id", label_to_id)
     id2tag = {}

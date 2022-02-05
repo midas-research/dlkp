@@ -17,7 +17,7 @@ class AutoCRFforTokenClassification(BertPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
         self.num_labels = config.num_labels
-        self.bert = AutoModel(config)
+        self.base_model = AutoModel(config)
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
         self.classifier = nn.Linear(config.hidden_size, config.num_labels)
         # self.crf= nn.Linear(config.num_labels,1)
@@ -43,7 +43,7 @@ class AutoCRFforTokenClassification(BertPreTrainedModel):
             return_dict if return_dict is not None else self.config.use_return_dict
         )
 
-        outputs = self.bert(
+        outputs = self.base_model(
             input_ids,
             position_ids=position_ids,
             attention_mask=attention_mask,

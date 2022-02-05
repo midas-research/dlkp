@@ -1,2 +1,3 @@
 source ../.dlkp_venv/bin/activate
 conda deactivate
+CUDA_VISIBLE_DEVICES=1 python run_auto_token_ke.py
