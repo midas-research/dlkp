@@ -1,6 +1,6 @@
 # add models having crf classification layer with option of bilstm layers
 
-from crf_utils import *
+from .crf_utils import *
 from typing import List, Tuple, Dict, Union
 
 import torch

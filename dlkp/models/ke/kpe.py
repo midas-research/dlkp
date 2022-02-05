@@ -45,14 +45,17 @@ from transformers import (
 )
 from transformers.trainer_utils import get_last_checkpoint, is_main_process
 
-from transformer.crf_models import (
+from dlkp.models.ke.transformer.crf_models import (
     BERT_CRFforTokenClassification,
     AutoCRFforTokenClassification,
 )
-from transformer.token_classification_models import LongformerForTokenClassification
-from crf.crf_trainer import CRF_Trainer
-from extraction_utils import ModelArguments, DataTrainingArguments
-from kp_metrics.metrics import compute_metrics
+from dlkp.models.ke.transformer.token_classification_models import (
+    LongformerForTokenClassification,
+)
+from dlkp.models.ke.crf.crf_trainer import CRF_Trainer
+
+# from extraction_utils import ModelArguments, DataTrainingArguments
+from dlkp.kp_metrics.metrics import compute_metrics
 
 logger = logging.getLogger(__name__)
 
@@ -64,6 +67,7 @@ CRF_MODEL_DICT = {
 }
 TOKEN_MODEL_DICT = {
     "bert": BertForTokenClassification,
+    "auto": AutoModelForTokenClassification
     # "longformer": LongformerForTokenClassification,
     # "reformer": ReformerForTokenClassification,
 }
@@ -250,10 +254,8 @@ def run_kpe(model_args, data_args, training_args):
                 # Special tokens have a word id that is None. We set the label to -100 so they are automatically
                 # ignored in the loss function.
                 if word_idx is None:
-                    # label_ids.append(-100)
-                    label_ids.append(
-                        2
-                    )  # to avoid error change -100 to 'O' tag i.e. 2 class
+                    label_ids.append(-100)
+                    # label_ids.append(2)  # to avoid error change -100 to 'O' tag i.e. 2 class
                 # We set the label for the first token of each word.
                 elif word_idx != previous_word_idx:
                     label_ids.append(label_to_id[label[word_idx]])

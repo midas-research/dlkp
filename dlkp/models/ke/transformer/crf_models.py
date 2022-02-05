@@ -9,7 +9,7 @@ from transformers import (
 )
 from transformers.modeling_outputs import TokenClassifierOutput
 import collections
-from crf import ConditionalRandomField
+from dlkp.models.ke.crf.crf import ConditionalRandomField
 from transformers.models.longformer.modeling_longformer import LongformerPreTrainedModel
 
 

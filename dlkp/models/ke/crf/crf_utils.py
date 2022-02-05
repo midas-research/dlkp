@@ -12,7 +12,7 @@ import logging
 
 VITERBI_DECODING = Tuple[List[int], float]  # a list of tags, and a viterbi score
 
-logger = logging.get_logger(__name__)
+# logger = logging.get_logger(__name__)
 
 
 def allowed_transitions(
