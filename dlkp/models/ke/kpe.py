@@ -45,16 +45,21 @@ from transformers import (
 )
 from transformers.trainer_utils import get_last_checkpoint, is_main_process
 
-from transformer.crf_models import BERT_CRFforTokenClassification
+from transformer.crf_models import (
+    BERT_CRFforTokenClassification,
+    AutoCRFforTokenClassification,
+)
 from transformer.token_classification_models import LongformerForTokenClassification
 from crf.crf_trainer import CRF_Trainer
 from extraction_utils import ModelArguments, DataTrainingArguments
+from kp_metrics.metrics import compute_metrics
 
 logger = logging.getLogger(__name__)
 
 
 CRF_MODEL_DICT = {
     "bert": BERT_CRFforTokenClassification,
+    "auto": AutoCRFforTokenClassification,
     # "longformer": Longformer_CRFforTokenClassification,
 }
 TOKEN_MODEL_DICT = {
@@ -63,16 +68,16 @@ TOKEN_MODEL_DICT = {
     # "reformer": ReformerForTokenClassification,
 }
 
-MODEL_DICT = {"crf": CRF_MODEL_DICT, "simple": TOKEN_MODEL_DICT}
+MODEL_DICT = {"crf": CRF_MODEL_DICT, "token": TOKEN_MODEL_DICT}
 
 
 TRAINER_DICT = {
     "crf": CRF_Trainer,
-    "simple": Trainer,
+    "token": Trainer,
 }
 
 
-def main_run_kpe(model_args, data_args, training_args):
+def run_kpe(model_args, data_args, training_args):
 
     # See all possible arguments in src/transformers/training_args.py
 
@@ -148,11 +153,13 @@ def main_run_kpe(model_args, data_args, training_args):
     else:
         column_names = datasets["validation"].column_names
         features = datasets["validation"].features
-    text_column_name = "text" if "text" in column_names else column_names[0]
-    label_column_name = "BIO_tags" if "BIO_tags" in column_names else column_names[1]
+    text_column_name = (
+        "document" if "document" in column_names else column_names[1]
+    )  # either document or 2nd column as text i/p
+    label_column_name = (
+        "doc_bio_tags" if "doc_bio_tags" in column_names else column_names[2]
+    )  # either doc_bio_tags column should be available or 3 rd columns will be considered as tag
 
-    # In the event the labels are not a `Sequence[ClassLabel]`, we will need to go through the dataset to get the
-    # unique labels.
     def get_label_list(labels):
         unique_labels = set()
         for label in labels:
@@ -173,7 +180,7 @@ def main_run_kpe(model_args, data_args, training_args):
         )
         label_to_id = {l: i for i, l in enumerate(label_list)}
     num_labels = len(label_list)
-    print(label_to_id)
+    print("label to id", label_to_id)
     id2tag = {}
     for k in label_to_id.keys():
         id2tag[label_to_id[k]] = k
@@ -190,7 +197,7 @@ def main_run_kpe(model_args, data_args, training_args):
         cache_dir=model_args.cache_dir,
     )
     config.use_CRF = model_args.use_CRF  ##CR replace from arguments
-    config.use_BiLSTM = False
+    config.use_BiLSTM = model_args.use_BiLSTM
     tokenizer = AutoTokenizer.from_pretrained(
         model_args.tokenizer_name
         if model_args.tokenizer_name
@@ -210,7 +217,6 @@ def main_run_kpe(model_args, data_args, training_args):
     print("model")
     # print(model)
     if tokenizer.pad_token is None:
-
         tokenizer.pad_token = tokenizer.eos_token
         config.pad_token_id = config.eos_token_id
 
@@ -286,40 +292,6 @@ def main_run_kpe(model_args, data_args, training_args):
     )
 
     # Initialize our Trainer
-    # metric = load_metric("seqeval")
-
-    # def compute_metrics(p):
-    #     predictions, labels = p
-    #     predictions = np.argmax(predictions, axis=2)
-
-    #     # Remove ignored index (special tokens)
-    #     true_predictions = [
-    #         [label_list[p] for (p, l) in zip(prediction, label) if l != -100]
-    #         for prediction, label in zip(predictions, labels)
-    #     ]
-    #     true_labels = [
-    #         [label_list[l] for (p, l) in zip(prediction, label) if l != -100]
-    #         for prediction, label in zip(predictions, labels)
-    #     ]
-
-    #     results = metric.compute(predictions=true_predictions, references=true_labels)
-    #     if data_args.return_entity_level_metrics:
-    #         # Unpack nested dictionaries
-    #         final_results = {}
-    #         for key, value in results.items():
-    #             if isinstance(value, dict):
-    #                 for n, v in value.items():
-    #                     final_results[f"{key}_{n}"] = v
-    #             else:
-    #                 final_results[key] = value
-    #         return final_results
-    #     else:
-    #         return {
-    #             "precision": results["overall_precision"],
-    #             "recall": results["overall_recall"],
-    #             "f1": results["overall_f1"],
-    #             "accuracy": results["overall_accuracy"],
-    #         }
 
     trainer = TRAINER_DICT[data_args.task_name](
         model=model,
@@ -359,19 +331,18 @@ def main_run_kpe(model_args, data_args, training_args):
 
     # Evaluation
     results = {}
-    # if training_args.do_eval:
-
-    #     logger.info("*** Evaluate ***")
-
-    #     results = trainer.evaluate()
-
-    #     output_eval_file = os.path.join(training_args.output_dir, "eval_results_KPE.txt")
-    #     if trainer.is_world_process_zero():
-    #         with open(output_eval_file, "w") as writer:
-    #             logger.info("***** Eval results *****")
-    #             for key, value in results.items():
-    #                 logger.info(f"  {key} = {value}")
-    #                 writer.write(f"{key} = {value}\n")
+    if training_args.do_eval:
+        logger.info("*** Evaluate ***")
+        results = trainer.evaluate()
+        output_eval_file = os.path.join(
+            training_args.output_dir, "eval_results_KPE.txt"
+        )
+        if trainer.is_world_process_zero():
+            with open(output_eval_file, "w") as writer:
+                logger.info("***** Eval results *****")
+                for key, value in results.items():
+                    logger.info(f"  {key} = {value}")
+                    writer.write(f"{key} = {value}\n")
 
     # Predict
     if training_args.do_predict:
