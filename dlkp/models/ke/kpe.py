@@ -211,9 +211,12 @@ def run_kpe(model_args, data_args, training_args):
         use_fast=True,
         add_prefix_space=True,
     )
-    model = MODEL_DICT[data_args.task_name][
-        model_args.model_family_name
-    ].from_pretrained(
+    model = (
+        AutoCRFforTokenClassification
+        if model_args.use_CRF
+        else AutoModelForTokenClassification
+    )
+    model = model.from_pretrained(
         model_args.model_name_or_path,
         config=config,
         cache_dir=model_args.cache_dir,

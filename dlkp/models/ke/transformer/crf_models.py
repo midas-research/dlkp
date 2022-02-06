@@ -22,8 +22,6 @@ class AutoCRFforTokenClassification(AutoModelForTokenClassification):
         self.base_model = AutoModel(config)
         # self.dropout = nn.Dropout(config.hidden_dropout_prob)
         self.classifier = nn.Linear(config.hidden_size, config.num_labels)
-        # self.crf= nn.Linear(config.num_labels,1)
-        # self.crf= ConditionalRandomField(self.num_labels)
         self.crf = ConditionalRandomField(
             self.num_labels,
             label_encoding="BIO",
