@@ -208,24 +208,26 @@ class CRF_Trainer(Trainer):
 
         Subclass and override for custom behavior.
         """
-        # if self.label_smoother is not None and "labels" in inputs:
+        # labels = inputs.pop("labels")
+        # assert "labels" in inputs
+        # if "labels" in inputs:
         #     labels = inputs.pop("labels")
         # else:
-        labels = None
+        # labels = None
         # print(model)
-        # assert "labels" in inputs
-        # print(type(inputs),inputs)
+        # print(type(inputs), inputs.keys())
         outputs = model(**inputs)
         # Save past state if it exists
         # TODO: this needs to be fixed and made cleaner later.
         if self.args.past_index >= 0:
             self._past = outputs[self.args.past_index]
 
-        if labels is not None:
-            loss = self.label_smoother(outputs, labels)
-        else:
-            # We don't use .loss here since the model may return tuples instead of ModelOutput.
-            # print(outputs)
-            loss = outputs["loss"] if isinstance(outputs, dict) else outputs[0]
+        # if labels is not None:
+        #     # print("labels is not None")
+        #     loss = self.label_smoother(outputs, labels)
+        # else:
+        #     # We don't use .loss here since the model may return tuples instead of ModelOutput.
+        # print(outputs.keys())
+        loss = outputs["loss"] if isinstance(outputs, dict) else outputs[0]
         # print("loss is ", loss)
         return (loss, outputs) if return_outputs else loss

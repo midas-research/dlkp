@@ -3,12 +3,12 @@ from dlkp.models.ke.kpe import run_kpe, TrainingArguments
 from dlkp.models.ke.extraction_utils import DataTrainingArguments, ModelArguments
 
 training_args = TrainingArguments(
-    output_dir="/media/nas_mount/Debanjan/amardeep/dlkp_out/inpec_debug",  # todo
+    output_dir="/media/nas_mount/Debanjan/amardeep/dlkp_out/inpec_crf_debug",  # todo
     learning_rate=3e-5,
     overwrite_output_dir=True,
     num_train_epochs=5,
-    per_device_train_batch_size=4,
-    per_device_eval_batch_size=16,
+    per_device_train_batch_size=2,
+    per_device_eval_batch_size=2,
     # gradient_accumulation_steps=4,
     do_train=True,
     do_eval=True,
@@ -21,10 +21,10 @@ training_args = TrainingArguments(
     # weight_decay =0.001
 )
 mdl_args = ModelArguments(
-    model_family_name="auto", model_name_or_path="roberta-base", use_CRF=False
+    model_family_name="auto", model_name_or_path="roberta-base", use_CRF=True
 )
 data_args = DataTrainingArguments(
-    task_name="token",
+    task_name="crf",
     # train_file="/media/nas_mount/Debanjan/amardeep/proc_data/kp20k/medium/conll/train.json",
     # validation_file="/media/nas_mount/Debanjan/amardeep/proc_data/kp20k/medium/conll/test.json",
     dataset_name="midas/inspec",

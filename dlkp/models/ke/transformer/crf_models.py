@@ -6,6 +6,8 @@ from transformers import (
     BertPreTrainedModel,
     LongformerModel,
     PreTrainedModel,
+    AutoModelForTokenClassification,
+    # PretrainedModel,
 )
 from transformers.modeling_outputs import TokenClassifierOutput
 import collections
@@ -13,17 +15,20 @@ from dlkp.models.ke.crf.crf import ConditionalRandomField
 from transformers.models.longformer.modeling_longformer import LongformerPreTrainedModel
 
 
-class AutoCRFforTokenClassification(BertPreTrainedModel):
+class AutoCRFforTokenClassification(AutoModelForTokenClassification):
     def __init__(self, config):
         super().__init__(config)
         self.num_labels = config.num_labels
         self.base_model = AutoModel(config)
-        self.dropout = nn.Dropout(config.hidden_dropout_prob)
+        # self.dropout = nn.Dropout(config.hidden_dropout_prob)
         self.classifier = nn.Linear(config.hidden_size, config.num_labels)
         # self.crf= nn.Linear(config.num_labels,1)
         # self.crf= ConditionalRandomField(self.num_labels)
         self.crf = ConditionalRandomField(
-            self.num_labels, label_encoding="BIO", idx2tag={0: "B", 1: "I", 2: "0"}
+            self.num_labels,
+            label_encoding="BIO",
+            idx2tag={0: "B", 1: "I", 2: "0"},
+            include_start_end_transitions=False,
         )
         self.init_weights()
 
@@ -89,7 +94,7 @@ class BERT_CRFforTokenClassification(BertPreTrainedModel):
         super().__init__(config)
         self.num_labels = config.num_labels
         self.bert = BertModel(config)
-        self.dropout = nn.Dropout(config.hidden_dropout_prob)
+        # self.dropout = nn.Dropout(config.hidden_dropout_prob)
         self.classifier = nn.Linear(config.hidden_size, config.num_labels)
         # self.crf= nn.Linear(config.num_labels,1)
         # self.crf= ConditionalRandomField(self.num_labels)
@@ -142,17 +147,17 @@ class BERT_CRFforTokenClassification(BertPreTrainedModel):
             attentions=outputs.attentions,
         )
 
-    def freeze_till_clf(self):
-        for param in self.bert.parameters():
-            param.requires_grad = False
-        for param in self.dropout.parameters():
-            param.requires_grad = False
-        for param in self.classifier.parameters():
-            param.requires_grad = False
+    # def freeze_till_clf(self):
+    #     for param in self.bert.parameters():
+    #         param.requires_grad = False
+    #     for param in self.dropout.parameters():
+    #         param.requires_grad = False
+    #     for param in self.classifier.parameters():
+    #         param.requires_grad = False
 
-    def freeze_encoder_layer(self):
-        for param in self.bert.parameters():
-            param.requires_grad = False
+    # def freeze_encoder_layer(self):
+    #     for param in self.bert.parameters():
+    #         param.requires_grad = False
 
 
 class Longformer_CRFforTokenClassification(LongformerPreTrainedModel):
