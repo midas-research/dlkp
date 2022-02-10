@@ -45,17 +45,17 @@ from transformers import (
 )
 from transformers.trainer_utils import get_last_checkpoint, is_main_process
 
-from dlkp.models.ke.transformer.crf_models import (
+from .transformer.crf_models import (
     BERT_CRFforTokenClassification,
     AutoCRFforTokenClassification,
 )
-from dlkp.models.ke.transformer.token_classification_models import (
+from .transformer.token_classification_models import (
     LongformerForTokenClassification,
 )
-from dlkp.models.ke.crf.crf_trainer import CRF_Trainer
+from .crf.crf_trainer import CRF_Trainer
 
 # from extraction_utils import ModelArguments, DataTrainingArguments
-from dlkp.kp_metrics.metrics import compute_metrics
+from ...kp_metrics.metrics import compute_metrics
 
 logger = logging.getLogger(__name__)
 
