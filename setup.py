@@ -7,7 +7,7 @@ setup(
     name="dlkp",
     version="0.1",
     description="A deep learning library for keyphrase extraction and generation",
-    long_description=open("README.md", encoding="utf-8").read(),
+    long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
     author="Amardeep Kumar || Debanjan Mahata",
     author_email="Kumaramardipsingh@gmail.com || debanjanmahata85@gmail.com",
