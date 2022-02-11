@@ -16,7 +16,7 @@ from transformers import BertForTokenClassification, AdamW, BertConfig
 from transformers import get_linear_schedule_with_warmup
 
 # We'll need the BertTokenizer for doing sequence tagging with Bert
-tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
 
 
 def get_device():
@@ -26,22 +26,22 @@ def get_device():
         # Tell PyTorch to use the GPU.
         device = torch.device("cuda")
 
-        print('There are %d GPU(s) available.' % torch.cuda.device_count())
+        print("There are %d GPU(s) available." % torch.cuda.device_count())
 
-        print('We will use the GPU:', torch.cuda.get_device_name(0))
+        print("We will use the GPU:", torch.cuda.get_device_name(0))
 
     # If not...
     else:
-        print('No GPU available, using the CPU instead.')
+        print("No GPU available, using the CPU instead.")
         device = torch.device("cpu")
 
     return device
 
 
 def format_time(elapsed):
-    '''
+    """
     Takes a time in seconds and returns a string hh:mm:ss
-    '''
+    """
     # Round to the nearest second.
     elapsed_rounded = int(round((elapsed)))
 
@@ -118,7 +118,7 @@ def prepare_tokenized_input(sentences):
     for sent in sentences:
         # Reconstruct the sentence--otherwise `tokenizer` will interpret the list
         # of string tokens as having already been tokenized by BERT.
-        sent_str = ' '.join(sent)
+        sent_str = " ".join(sent)
 
         # `encode_plus` will:
         #   (1) Tokenize the sentence.
@@ -133,19 +133,19 @@ def prepare_tokenized_input(sentences):
             max_length=50,  # Pad & truncate all sentences.
             pad_to_max_length=True,
             return_attention_mask=True,  # Construct attn. masks.
-            return_tensors='pt',  # Return pytorch tensors.
+            return_tensors="pt",  # Return pytorch tensors.
         )
 
         # Add the encoded sentence to the list.
-        input_ids.append(encoded_dict['input_ids'][0])
+        input_ids.append(encoded_dict["input_ids"][0])
 
         # And its attention mask (simply differentiates padding from non-padding).
-        attention_masks.append(encoded_dict['attention_mask'][0])
+        attention_masks.append(encoded_dict["attention_mask"][0])
 
     # Print sentence 0, now as a list of IDs.
-    print('Original: ', sentences[0])
-    print('Token IDs:', input_ids[0])
-    print('Masks:', attention_masks[0])
+    print("Original: ", sentences[0])
+    print("Token IDs:", input_ids[0])
+    print("Masks:", attention_masks[0])
 
     return input_ids, attention_masks
 
@@ -187,15 +187,17 @@ def add_null_labels(input_ids, labels, label_map):
             token_id = token_id.numpy().item()
 
             # If `[PAD]`, `[CLS]`, or `[SEP]`...
-            if (token_id == tokenizer.pad_token_id) or \
-                    (token_id == tokenizer.cls_token_id) or \
-                    (token_id == tokenizer.sep_token_id):
+            if (
+                (token_id == tokenizer.pad_token_id)
+                or (token_id == tokenizer.cls_token_id)
+                or (token_id == tokenizer.sep_token_id)
+            ):
 
                 # Assign it the null label.
                 padded_labels.append(null_label_id)
 
             # If the token string starts with "##"...
-            elif tokenizer.ids_to_tokens[token_id][0:2] == '##':
+            elif tokenizer.ids_to_tokens[token_id][0:2] == "##":
 
                 # It's a subword token, and not part of the original dataset, so
                 # assign it the null label.
@@ -218,7 +220,7 @@ def add_null_labels(input_ids, labels, label_map):
 
         # If we did this right, then the new `padded_labels` list should match
         # the length of the tokenized sentence.
-        assert (len(sen) == len(padded_labels))
+        assert len(sen) == len(padded_labels)
 
         # Store the updated labels list for this sentence.
         new_labels.append(padded_labels)
@@ -271,8 +273,8 @@ def train_model(train_data, valid_data, device):
         # Perform one full pass over the training set.
 
         print("")
-        print('======== Epoch {:} / {:} ========'.format(epoch_i + 1, epochs))
-        print('Training...')
+        print("======== Epoch {:} / {:} ========".format(epoch_i + 1, epochs))
+        print("Training...")
 
         # Measure how long the training epoch takes.
         t0 = time.time()
@@ -294,7 +296,11 @@ def train_model(train_data, valid_data, device):
                 elapsed = format_time(time.time() - t0)
 
                 # Report progress.
-                print('  Batch {:>5,}  of  {:>5,}.    Elapsed: {:}.'.format(step, len(train_data), elapsed))
+                print(
+                    "  Batch {:>5,}  of  {:>5,}.    Elapsed: {:}.".format(
+                        step, len(train_data), elapsed
+                    )
+                )
 
             # Unpack this training batch from our dataloader.
             #
@@ -321,10 +327,12 @@ def train_model(train_data, valid_data, device):
             # https://huggingface.co/transformers/model_doc/bert.html#bertfortokenclassification
             # The results are returned in a results object, documented here:
             # https://huggingface.co/transformers/main_classes/output.html#transformers.modeling_outputs.TokenClassifierOutput
-            result = model(b_input_ids,
-                           token_type_ids=None,
-                           attention_mask=b_input_mask,
-                           labels=b_labels)
+            result = model(
+                b_input_ids,
+                token_type_ids=None,
+                attention_mask=b_input_mask,
+                labels=b_labels,
+            )
 
             loss = result.loss
 
@@ -363,14 +371,14 @@ def train_model(train_data, valid_data, device):
     print("Training complete!")
 
     # Use plot styling from seaborn.
-    sns.set(style='darkgrid')
+    sns.set(style="darkgrid")
 
     # Increase the plot size and font size.
     sns.set(font_scale=1.5)
-    plt.rcParams["figure.figsize"] = (12,6)
+    plt.rcParams["figure.figsize"] = (12, 6)
 
     # Plot the learning curve.
-    plt.plot(loss_values, 'b-o')
+    plt.plot(loss_values, "b-o")
 
     # Label the plot.
     plt.title("Training loss")
@@ -393,9 +401,9 @@ if __name__ == "__main__":
     # add the null labels for special tokens like [SEP], [CLS], etc
     final_train_labels = add_null_labels(train_token_ids, train_labels, label_mapping)
     # convert the processed dataset to tensors
-    pt_train_token_ids, pt_train_attention_masks, pt_train_labels = convert_to_tensors(train_token_ids,
-                                                                                       train_attention_masks,
-                                                                                       final_train_labels)
+    pt_train_token_ids, pt_train_attention_masks, pt_train_labels = convert_to_tensors(
+        train_token_ids, train_attention_masks, final_train_labels
+    )
 
     # process the validation dataset
     # parse the conll format
@@ -405,9 +413,9 @@ if __name__ == "__main__":
     # add the null labels for special tokens like [SEP], [CLS], etc
     final_valid_labels = add_null_labels(valid_token_ids, valid_labels, label_mapping)
     # convert the processed dataset to tensors
-    pt_valid_token_ids, pt_valid_attention_masks, pt_valid_labels = convert_to_tensors(valid_token_ids,
-                                                                                       valid_attention_masks,
-                                                                                       final_valid_labels)
+    pt_valid_token_ids, pt_valid_attention_masks, pt_valid_labels = convert_to_tensors(
+        valid_token_ids, valid_attention_masks, final_valid_labels
+    )
     # process the test dataset
     # parse the conll format
     test_sentences, test_labels, _ = parse_conll("test.txt")
@@ -416,16 +424,22 @@ if __name__ == "__main__":
     # add the null labels for special tokens like [SEP], [CLS], etc
     final_test_labels = add_null_labels(test_token_ids, test_labels, label_mapping)
     # convert the processed dataset to tensors
-    pt_test_token_ids, pt_test_attention_masks, pt_test_labels = convert_to_tensors(test_token_ids,
-                                                                                    test_attention_masks,
-                                                                                    final_test_labels)
+    pt_test_token_ids, pt_test_attention_masks, pt_test_labels = convert_to_tensors(
+        test_token_ids, test_attention_masks, final_test_labels
+    )
 
     # Convert the training inputs into a TensorDataset.
-    train_dataset = TensorDataset(pt_train_token_ids, pt_train_attention_masks, pt_train_labels)
+    train_dataset = TensorDataset(
+        pt_train_token_ids, pt_train_attention_masks, pt_train_labels
+    )
     # Convert the validation inputs into a TensorDataset.
-    valid_dataset = TensorDataset(pt_valid_token_ids, pt_valid_attention_masks, pt_valid_labels)
+    valid_dataset = TensorDataset(
+        pt_valid_token_ids, pt_valid_attention_masks, pt_valid_labels
+    )
     # Convert the test inputs into a TensorDataset.
-    test_dataset = TensorDataset(pt_test_token_ids, pt_test_attention_masks, pt_test_labels)
+    test_dataset = TensorDataset(
+        pt_test_token_ids, pt_test_attention_masks, pt_test_labels
+    )
 
     # The DataLoader needs to know our batch size for training, so we specify it
     # here. For fine-tuning BERT on a specific task, the authors recommend a batch
@@ -437,20 +451,21 @@ if __name__ == "__main__":
     train_dataloader = DataLoader(
         train_dataset,  # The training samples.
         sampler=RandomSampler(train_dataset),  # Select batches randomly
-        batch_size=batch_size  # Trains with this batch size.
+        batch_size=batch_size,  # Trains with this batch size.
     )
 
     # For validation the order doesn't matter, so we'll just read them sequentially.
     validation_dataloader = DataLoader(
         valid_dataset,  # The validation samples.
         sampler=SequentialSampler(valid_dataset),  # Pull out batches sequentially.
-        batch_size=batch_size  # Evaluate with this batch size.
+        batch_size=batch_size,  # Evaluate with this batch size.
     )
 
     # Load BertForTokenClassification
     model = BertForTokenClassification.from_pretrained(
         "bert-base-uncased",  # Use the 12-layer BERT model, with an uncased vocab.
-        num_labels=len(label_mapping) + 1,  # The number of output labels--18 for our NER dataset
+        num_labels=len(label_mapping)
+        + 1,  # The number of output labels--18 for our NER dataset
         output_attentions=False,  # Whether the model returns attentions weights.
         output_hidden_states=False,  # Whether the model returns all hidden-states.
     )
@@ -459,10 +474,9 @@ if __name__ == "__main__":
     model.cuda()
 
     # Load the AdamW optimizer
-    optimizer = AdamW(model.parameters(),
-                      lr=5e-5,  # args.learning_rate
-                      eps=1e-8  # args.adam_epsilon
-                    )
+    optimizer = AdamW(
+        model.parameters(), lr=5e-5, eps=1e-8  # args.learning_rate  # args.adam_epsilon
+    )
 
     # Number of training epochs
     epochs = 4
@@ -471,26 +485,30 @@ if __name__ == "__main__":
     total_steps = len(train_dataloader) * epochs
 
     # Create the learning rate scheduler.
-    scheduler = get_linear_schedule_with_warmup(optimizer,
-                                                num_warmup_steps=0,
-                                                num_training_steps=total_steps)
+    scheduler = get_linear_schedule_with_warmup(
+        optimizer, num_warmup_steps=0, num_training_steps=total_steps
+    )
 
     device = get_device()
 
-    train_model(train_data=train_dataloader,
-                valid_data=validation_dataloader,
-                device=device)
+    train_model(
+        train_data=train_dataloader, valid_data=validation_dataloader, device=device
+    )
 
     # Prediction on test set
     # Set the batch size.
     batch_size = 32
 
     # Create the DataLoader.
-    prediction_data = TensorDataset(pt_test_token_ids, pt_test_attention_masks, pt_test_labels)
+    prediction_data = TensorDataset(
+        pt_test_token_ids, pt_test_attention_masks, pt_test_labels
+    )
     prediction_sampler = SequentialSampler(prediction_data)
-    prediction_dataloader = DataLoader(prediction_data, sampler=prediction_sampler, batch_size=batch_size)
+    prediction_dataloader = DataLoader(
+        prediction_data, sampler=prediction_sampler, batch_size=batch_size
+    )
 
-    print('Predicting labels for {:,} test sentences...'.format(len(pt_test_token_ids)))
+    print("Predicting labels for {:,} test sentences...".format(len(pt_test_token_ids)))
 
     # Put model in evaluation mode
     model.eval()
@@ -510,22 +528,24 @@ if __name__ == "__main__":
         # speeding up prediction
         with torch.no_grad():
             # Forward pass, calculate logit predictions
-            result = model(b_input_ids,
-                           token_type_ids=None,
-                           attention_mask=b_input_mask,
-                           return_dict=True)
+            result = model(
+                b_input_ids,
+                token_type_ids=None,
+                attention_mask=b_input_mask,
+                return_dict=True,
+            )
 
         logits = result.logits
 
         # Move logits and labels to CPU
         logits = logits.detach().cpu().numpy()
-        label_ids = b_labels.to('cpu').numpy()
+        label_ids = b_labels.to("cpu").numpy()
 
         # Store predictions and true labels
         predictions.append(logits)
         true_labels.append(label_ids)
 
-    print('    DONE.')
+    print("    DONE.")
 
     # First, combine the results across the batches.
     all_predictions = np.concatenate(predictions, axis=0)
@@ -569,11 +589,17 @@ if __name__ == "__main__":
             real_token_predictions.append(predicted_label_ids[i])
             real_token_labels.append(all_true_labels[i])
 
-    print("Before filtering out `null` tokens, length = {:,}".format(len(all_true_labels)))
-    print(" After filtering out `null` tokens, length = {:,}".format(len(real_token_labels)))
+    print(
+        "Before filtering out `null` tokens, length = {:,}".format(len(all_true_labels))
+    )
+    print(
+        " After filtering out `null` tokens, length = {:,}".format(
+            len(real_token_labels)
+        )
+    )
 
     # Calculate the F1 score. Because this is a multi-class problem, we have
     # to set the `average` parameter. TODO - What does `micro` do?
-    f1 = f1_score(real_token_labels, real_token_predictions, average='micro')
+    f1 = f1_score(real_token_labels, real_token_predictions, average="micro")
 
     print("F1 score: {:.2%}".format(f1))
