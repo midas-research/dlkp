@@ -12,7 +12,7 @@ setup(
     author="Amardeep Kumar || Debanjan Mahata",
     author_email="Kumaramardipsingh@gmail.com || debanjanmahata85@gmail.com",
     url="https://github.com/midas-research/dlkp",
-    download_url= 'https://github.com/midas-research/dlkp/archive/refs/tags/0.1.tar.gz'
+    download_url="https://github.com/midas-research/dlkp/archive/refs/tags/0.1.tar.gz",
     packages=find_packages(exclude="tests"),
     license="Apache License Version 2.0",
     install_requires=required,
