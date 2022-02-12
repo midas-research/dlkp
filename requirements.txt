@@ -12,5 +12,3 @@ tensorflow>=2.0
 tensorboard
 pandas
 tokenizers
-streamlit
-sentencepiece
