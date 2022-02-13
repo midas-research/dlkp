@@ -4,7 +4,7 @@ import os
 
 setup(
     name="dlkp",
-    version="0.3",
+    version="0.0.1",
     author="Amardeep Kumar || Debanjan Mahata",
     author_email="kumaramardipsingh@gmail.com",
     description="A deep learning library for keyphrase extraction and generation",
