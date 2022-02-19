@@ -7,15 +7,16 @@ from dlkp.models.ke.extraction_utils import (
 )
 
 training_args = TrainingArguments(
-    output_dir="/media/nas_mount/Debanjan/amardeep/dlkp_out/inpec_crf_debug",  # todo
+    output_dir="/media/nas_mount/Debanjan/amardeep/dlkp_out/inpec_debug_eval",  # todo
     learning_rate=3e-5,
     overwrite_output_dir=True,
     num_train_epochs=5,
     per_device_train_batch_size=8,
     per_device_eval_batch_size=8,
     # gradient_accumulation_steps=4,
-    do_train=True,
-    do_eval=True,
+    do_train=False,
+    do_eval=False,
+    do_predict=True,
     evaluation_strategy="steps",
     save_steps=1000,
     eval_steps=100,
@@ -24,7 +25,10 @@ training_args = TrainingArguments(
     logging_steps=100
     # weight_decay =0.001
 )
-model_args = ModelArguments(model_name_or_path="roberta-base", use_CRF=True)
+model_args = ModelArguments(
+    model_name_or_path="/media/nas_mount/Debanjan/amardeep/dlkp_out/inpec_debug",
+    use_CRF=False,
+)
 data_args = DataTrainingArguments(
     # train_file="/media/nas_mount/Debanjan/amardeep/proc_data/kp20k/medium/conll/train.json",
     # validation_file="/media/nas_mount/Debanjan/amardeep/proc_data/kp20k/medium/conll/test.json",

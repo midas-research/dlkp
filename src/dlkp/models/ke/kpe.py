@@ -390,8 +390,10 @@ def run_kpe(model_args, data_args, training_args):
                 current_kps = []
                 ckp = []
                 prev_tag = None
+                # print(len(tag_), len(ids))
+                # assert len(tag_) == len(ids)
                 for j, tag in enumerate(tag_):
-                    id = ids[j]
+                    id = ids[j + 1]
 
                     if tag == "O" and len(ckp) > 0:
 
@@ -439,7 +441,8 @@ def run_kpe(model_args, data_args, training_args):
             # examples['eekp']= eekp
             # else:
             #     examples['kp_predicted']= ['<dummy_kp>']
-            examples["id"] = i
+            if id not in examples:
+                examples["id"] = i
             return examples
 
         import pandas as pd
@@ -451,8 +454,8 @@ def run_kpe(model_args, data_args, training_args):
             training_args.output_dir, "test_predictions_BIO.txt"
         )
         if trainer.is_world_process_zero():
-            print(test_dataset, len(test_dataset["paper_id"]))
-            ppid = test_dataset["paper_id"]
+            print(test_dataset, len(test_dataset["id"]))
+            ppid = test_dataset["id"]
             # ekp= test_dataset['extractive_keyphrases']
 
             test_dataset = test_dataset.map(
@@ -466,7 +469,7 @@ def run_kpe(model_args, data_args, training_args):
                 {
                     "id": ppid,
                     "extractive_keyphrase": test_dataset["eekp"],
-                    "keyphrases": test_dataset["kp_predicted"],
+                    "predicted_keyphrases": test_dataset["kp_predicted"],
                 }
             )
             df.to_csv(output_test_predictions_file, index=False)
