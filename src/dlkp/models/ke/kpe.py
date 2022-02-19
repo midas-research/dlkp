@@ -360,7 +360,7 @@ def run_kpe(model_args, data_args, training_args):
         predictions = np.argmax(predictions, axis=2)
 
         # Remove ignored index (special tokens)
-        true_predictions = [
+        predicted_labels = [
             [label_list[p] for (p, l) in zip(prediction, label) if l != -100]
             for prediction, label in zip(predictions, labels)
         ]
@@ -384,14 +384,15 @@ def run_kpe(model_args, data_args, training_args):
             # for i in range(len(prediction)):
             ids = examples["input_ids"]
             # print(examples.keys())
-
             # print(tags)
             def mmkp(tag_):
                 current_kps = []
                 ckp = []
                 prev_tag = None
+                tokens = tokenizer.convert_ids_to_tokens(ids, skip_special_tokens=True)
+                print(len(tokens), len(tag_))
                 # print(len(tag_), len(ids))
-                # assert len(tag_) == len(ids)
+                assert len(tag_) == len(tokens)
                 for j, tag in enumerate(tag_):
                     id = ids[j + 1]
 
@@ -429,7 +430,7 @@ def run_kpe(model_args, data_args, training_args):
                     # print(decoded_kps)
                 return decoded_kps
 
-            tags = true_predictions[i]
+            tags = predicted_labels[i]
             decoded_kps = mmkp(tags)
 
             ttgs = true_labels[i]
@@ -477,7 +478,7 @@ def run_kpe(model_args, data_args, training_args):
             # get BIO tag files
 
             with open(output_test_predictions_BIO_file, "w") as writer:
-                for prediction in true_predictions:
+                for prediction in predicted_labels:
                     writer.write(" ".join(prediction) + "\n")
 
     return results
