@@ -81,7 +81,7 @@ TRAINER_DICT = {
 }
 
 
-def run_kpe(model_args, data_args, training_args):
+def run_extraction_model(model_args, data_args, training_args):
 
     # See all possible arguments in src/transformers/training_args.py
 
@@ -155,9 +155,9 @@ def run_kpe(model_args, data_args, training_args):
     # data
     dataset = KpExtractionDatasets(data_args, tokenizer)
     num_labels = dataset.num_labels
-    train_data = dataset.get_train_dataset()
-    eval_data = dataset.get_eval_dataset()
-    test_data = dataset.get_test_dataset()
+    train_dataset = dataset.get_train_dataset()
+    eval_dataset = dataset.get_eval_dataset()
+    test_dataset = dataset.get_test_dataset()
 
     # config
     config = AutoConfig.from_pretrained(
@@ -190,8 +190,8 @@ def run_kpe(model_args, data_args, training_args):
     trainer = TRAINER_DICT[data_args.task_name](
         model=model,
         args=training_args,
-        train_dataset=train_data if training_args.do_train else None,
-        eval_dataset=eval_data if training_args.do_eval else None,
+        train_dataset=train_dataset if training_args.do_train else None,
+        eval_dataset=eval_dataset if training_args.do_eval else None,
         tokenizer=tokenizer,
         data_collator=data_collator,
         compute_metrics=compute_metrics,
@@ -240,7 +240,7 @@ def run_kpe(model_args, data_args, training_args):
     if training_args.do_predict:
         logger.info("*** Predict ***")
 
-        test_dataset = tokenized_datasets["test"]
+        assert test_dataset is not None
         predictions, labels, metrics = trainer.predict(test_dataset)
         # if model_args.use_CRF is False:
         predictions = np.argmax(predictions, axis=2)
@@ -368,3 +368,6 @@ def run_kpe(model_args, data_args, training_args):
                     writer.write(" ".join(prediction) + "\n")
 
     return results
+
+
+def 

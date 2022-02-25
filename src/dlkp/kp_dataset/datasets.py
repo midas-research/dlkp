@@ -142,5 +142,8 @@ class KpExtractionDatasets(KPDatasets):
 
         return tokenized_inputs
 
-    def get_keyphrases_from_tags(self, examples):
+    def get_extracted_keyphrases(self, split_name):
         pass
+
+    def extract_kp_from_tags(self, examples, i):
+        
