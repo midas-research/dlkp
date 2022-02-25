@@ -28,7 +28,6 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 import numpy as np
-from datasets import ClassLabel, load_dataset, load_metric
 
 import transformers
 from transformers import (
@@ -56,6 +55,7 @@ from .crf.crf_trainer import CRF_Trainer
 
 # from extraction_utils import ModelArguments, DataTrainingArguments
 from ...kp_metrics.metrics import compute_metrics
+from ...kp_dataset.datasets import KpExtractionDatasets
 
 logger = logging.getLogger(__name__)
 
@@ -135,74 +135,11 @@ def run_kpe(model_args, data_args, training_args):
 
     # Set seed before initializing model.
     set_seed(training_args.seed)
-
-    if data_args.dataset_name is not None:
-        # Downloading and loading a dataset from the hub.
-        datasets = load_dataset(data_args.dataset_name, data_args.dataset_config_name)
-    else:
-        data_files = {}
-        if data_args.train_file is not None:
-            data_files["train"] = data_args.train_file
-            extension = data_args.train_file.split(".")[-1]
-        if data_args.validation_file is not None:
-            data_files["validation"] = data_args.validation_file
-            extension = data_args.validation_file.split(".")[-1]
-        if data_args.test_file is not None:
-            data_files["test"] = data_args.test_file
-            extension = data_args.test_file.split(".")[-1]
-        datasets = load_dataset(extension, data_files=data_files)
-    if training_args.do_train:
-        column_names = datasets["train"].column_names
-        features = datasets["train"].features
-    else:
-        column_names = datasets["validation"].column_names
-        features = datasets["validation"].features
-    text_column_name = (
-        "document" if "document" in column_names else column_names[1]
-    )  # either document or 2nd column as text i/p
-    label_column_name = (
-        "doc_bio_tags" if "doc_bio_tags" in column_names else column_names[2]
-    )  # either doc_bio_tags column should be available or 3 rd columns will be considered as tag
-
-    def get_label_list(labels):
-        unique_labels = set()
-        for label in labels:
-            unique_labels = unique_labels | set(label)
-        label_list = list(unique_labels)
-        label_list.sort()
-        return label_list
-
-    if isinstance(features[label_column_name].feature, ClassLabel):
-        label_list = features[label_column_name].feature.names
-        # No need to convert the labels since they are already ints.
-        label_to_id = {i: i for i in range(len(label_list))}
-    else:
-        label_list = get_label_list(
-            datasets["train"][label_column_name]
-            if training_args.do_train
-            else datasets["validation"][label_column_name]
-        )
-        label_to_id = {l: i for i, l in enumerate(label_list)}
-    label_to_id = {"B": 0, "I": 1, "O": 2}
-    num_labels = len(label_list)
-    print("label to id", label_to_id)
-    id2tag = {}
-    for k in label_to_id.keys():
-        id2tag[label_to_id[k]] = k
     # Load pretrained model and tokenizer
     #
     # Distributed training:
     # The .from_pretrained methods guarantee that only one local process can concurrently
     # download model & vocab.
-    config = AutoConfig.from_pretrained(
-        model_args.config_name
-        if model_args.config_name
-        else model_args.model_name_or_path,
-        num_labels=num_labels,
-        cache_dir=model_args.cache_dir,
-    )
-    config.use_CRF = model_args.use_CRF  ##CR replace from arguments
-    config.use_BiLSTM = model_args.use_BiLSTM
     tokenizer = AutoTokenizer.from_pretrained(
         model_args.tokenizer_name
         if model_args.tokenizer_name
@@ -211,6 +148,28 @@ def run_kpe(model_args, data_args, training_args):
         use_fast=True,
         add_prefix_space=True,
     )
+    if tokenizer.pad_token is None:
+        tokenizer.pad_token = tokenizer.eos_token
+        config.pad_token_id = config.eos_token_id
+
+    # data
+    dataset = KpExtractionDatasets(data_args, tokenizer)
+    num_labels = dataset.num_labels
+    train_data = dataset.get_train_dataset()
+    eval_data = dataset.get_eval_dataset()
+    test_data = dataset.get_test_dataset()
+
+    # config
+    config = AutoConfig.from_pretrained(
+        model_args.config_name
+        if model_args.config_name
+        else model_args.model_name_or_path,
+        num_labels=num_labels,
+        cache_dir=model_args.cache_dir,
+    )
+    config.use_CRF = model_args.use_CRF
+
+    # model
     model = (
         AutoCRFforTokenClassification
         if model_args.use_CRF
@@ -221,76 +180,6 @@ def run_kpe(model_args, data_args, training_args):
         config=config,
         cache_dir=model_args.cache_dir,
     )
-    # model.freeze_encoder_layer()
-    print("model")
-    # print(model)
-    if tokenizer.pad_token is None:
-        tokenizer.pad_token = tokenizer.eos_token
-        config.pad_token_id = config.eos_token_id
-
-    # Tokenizer check: this script requires a fast tokenizer.
-    # if not isinstance(tokenizer, PreTrainedTokenizerFast):
-    #     raise ValueError(
-    #         "This example script only works for models that have a fast tokenizer. Checkout the big table of models "
-    #         "at https://huggingface.co/transformers/index.html#bigtable to find the model types that meet this "
-    #         "requirement"
-    #     )
-
-    # Preprocessing the dataset
-    # Padding strategy
-    padding = "max_length" if data_args.pad_to_max_length else False
-
-    # Tokenize all texts and align the labels with them.
-    def tokenize_and_align_labels(examples):
-        tokenized_inputs = tokenizer(
-            examples[text_column_name],
-            padding=padding,
-            truncation=True,
-            # We use this argument because the texts in our dataset are lists of words (with a label for each word).
-            is_split_into_words=True,
-        )
-        labels = []
-        for i, label in enumerate(examples[label_column_name]):
-            word_ids = tokenized_inputs.word_ids(batch_index=i)
-            previous_word_idx = None
-            label_ids = []
-            for word_idx in word_ids:
-                # Special tokens have a word id that is None. We set the label to -100 so they are automatically
-                # ignored in the loss function.
-                if word_idx is None:
-                    label_ids.append(-100)
-                    # label_ids.append(2)  # to avoid error change -100 to 'O' tag i.e. 2 class
-                # We set the label for the first token of each word.
-                elif word_idx != previous_word_idx:
-                    label_ids.append(label_to_id[label[word_idx]])
-                # For the other tokens in a word, we set the label to either the current label or -100, depending on
-                # the label_all_tokens flag.
-                else:
-                    label_ids.append(
-                        label_to_id[label[word_idx]]
-                        if data_args.label_all_tokens
-                        else -100
-                    )
-                    # to avoid error change -100 to 'O' tag i.e. 2 class
-                    # label_ids.append(label_to_id[label[word_idx]] if data_args.label_all_tokens else 2)
-                previous_word_idx = word_idx
-
-            labels.append(label_ids)
-        if data_args.task_name == "guided":
-            tokenized_inputs["guide_embed"] = examples["guide_embed"]
-        tokenized_inputs["labels"] = labels
-        # tokenized_inputs['paper_id']= examples['paper_id']
-        # tokenized_inputs['extractive_keyphrases']= examples['extractive_keyphrases']
-
-        return tokenized_inputs
-
-    tokenized_datasets = datasets.map(
-        tokenize_and_align_labels,
-        batched=True,
-        num_proc=data_args.preprocessing_num_workers,
-        load_from_cache_file=not data_args.overwrite_cache,
-        # cache_file_name= data_args.cache_file_name
-    )
 
     # Data collator
     data_collator = DataCollatorForTokenClassification(
@@ -298,14 +187,11 @@ def run_kpe(model_args, data_args, training_args):
     )
 
     # Initialize our Trainer
-
     trainer = TRAINER_DICT[data_args.task_name](
         model=model,
         args=training_args,
-        train_dataset=tokenized_datasets["train"] if training_args.do_train else None,
-        eval_dataset=tokenized_datasets["validation"]
-        if training_args.do_eval
-        else None,
+        train_dataset=train_data if training_args.do_train else None,
+        eval_dataset=eval_data if training_args.do_eval else None,
         tokenizer=tokenizer,
         data_collator=data_collator,
         compute_metrics=compute_metrics,
