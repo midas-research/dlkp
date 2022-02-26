@@ -1,0 +1,3 @@
+test_runtime = 0.0273
+test_samples_per_second = 36.594
+test_steps_per_second = 36.594

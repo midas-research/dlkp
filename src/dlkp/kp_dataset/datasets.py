@@ -1,7 +1,5 @@
-from lib2to3.pgen2 import token
 import os, sys
 from dataclasses import dataclass, field
-from tkinter.messagebox import NO
 from typing import Optional
 from datasets import ClassLabel, load_dataset
 
@@ -108,6 +106,7 @@ class KpExtractionDatasets(KPDatasets):
             truncation=True,
             # We use this argument because the texts in our dataset are lists of words (with a label for each word).
             is_split_into_words=True,
+            return_special_tokens_mask=True,
         )
         labels = []
         if self.label_column_name is None:
@@ -160,11 +159,18 @@ class KpExtractionDatasets(KPDatasets):
 
     def extract_kp_from_tags(self, examples, idx):
         ids = examples["input_ids"]
+        atn_mask = examples["special_tokens_mask"]
         tokens = self.tokenizer.convert_ids_to_tokens(ids, skip_special_tokens=True)
-        tags = self.predicted_labels[idx]
+        tags = [
+            self.id_to_label[p]
+            for (p, m) in zip(self.predicted_labels[idx], atn_mask)
+            if m == 0
+        ]
         assert len(tokens) == len(
             tags
-        ), "number of tags in prediction and tokens are not same for {}th".format(idx)
+        ), "number of tags (={}) in prediction and tokens(={}) are not same for {}th".format(
+            len(tags), len(tokens), idx
+        )
         all_kps = []
         current_kp = []
         prev_tag = None

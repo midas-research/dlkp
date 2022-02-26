@@ -139,7 +139,7 @@ class DataTrainingArguments:
         },
     )
     dataset_name: Optional[str] = field(
-        default="midas/inspec",
+        default=None,
         metadata={"help": "The name of the dataset to use (via the datasets library)."},
     )
     dataset_config_name: Optional[str] = field(
@@ -160,6 +160,7 @@ class DataTrainingArguments:
             self.dataset_name is None
             and self.train_file is None
             and self.validation_file is None
+            and self.test_file is None
         ):
             raise ValueError(
                 "Need either a dataset name or a training/validation file."

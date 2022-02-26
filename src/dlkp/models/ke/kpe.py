@@ -84,16 +84,6 @@ TRAINER_DICT = {
 
 def run_extraction_model(model_args, data_args, training_args):
 
-    # See all possible arguments in src/transformers/training_args.py
-
-    # parser = HfArgumentParser((ModelArguments, DataTrainingArguments, TrainingArguments))
-    # if len(sys.argv) == 2 and sys.argv[1].endswith(".json"):
-    #     # If we pass only one argument to the script and it's the path to a json file,
-    #     # let's parse it to get our arguments.
-    #     model_args, data_args, training_args = parser.parse_json_file(json_file=os.path.abspath(sys.argv[1]))
-    # else:
-    #     model_args, data_args, training_args = parser.parse_args_into_dataclasses()
-
     # Detecting last checkpoint.
     last_checkpoint = None
     if (
@@ -156,6 +146,7 @@ def run_extraction_model(model_args, data_args, training_args):
     # data
     logging.info("loading kp dataset")
     dataset = KpExtractionDatasets(data_args, tokenizer)
+    print(dataset.datasets)
     num_labels = dataset.num_labels
     logging.info("tokeenize and allign laebls")
     dataset.tokenize_and_align_labels()
@@ -250,14 +241,10 @@ def run_extraction_model(model_args, data_args, training_args):
         predictions = np.argmax(predictions, axis=2)
 
         # Remove ignored index (special tokens)
-        predicted_labels = [
-            [dataset.id_to_label[p] for (p, l) in zip(prediction, label) if l != -100]
-            for prediction, label in zip(predictions, labels)
-        ]
-        true_labels = [
-            [dataset.id_to_label[l] for (p, l) in zip(prediction, label) if l != -100]
-            for prediction, label in zip(predictions, labels)
-        ]
+        # predicted_labels = [
+        #     [dataset.id_to_label[p] for p in prediction if p != -100]
+        #     for prediction in predictions
+        # ]
 
         output_test_results_file = os.path.join(
             training_args.output_dir, "test_results.txt"
@@ -276,15 +263,17 @@ def run_extraction_model(model_args, data_args, training_args):
         )
         if trainer.is_world_process_zero():
             predicted_kps = dataset.get_extracted_keyphrases(
-                predicted_labels=predicted_labels
+                predicted_labels=predictions
             )
             df = pd.DataFrame.from_dict({"extractive_keyphrase": predicted_kps})
             df.to_csv(output_test_predictions_file, index=False)
 
             # get BIO tag files
 
-            with open(output_test_predictions_BIO_file, "w") as writer:
-                for prediction in predicted_labels:
-                    writer.write(" ".join(prediction) + "\n")
+            # with open(output_test_predictions_BIO_file, "w") as writer:
+            #     for prediction in predictions:
+            #         writer.write(" ".join(prediction) + "\n")
+
+            results["extracted_keyprases"] = predicted_kps
 
     return results
