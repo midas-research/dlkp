@@ -1,3 +1,4 @@
+from lib2to3.pgen2 import token
 import os, sys
 from dataclasses import dataclass, field
 from tkinter.messagebox import NO
@@ -23,7 +24,7 @@ class KpExtractionDatasets(KPDatasets):
         self.load_kp_datasets()
 
     def tokenize_and_align_labels(self):
-        self.tokenized_datasets = self.datasets.map(
+        self.datasets = self.datasets.map(
             self.tokenize_and_align_labels_,
             batched=True,
             num_proc=self.data_args.preprocessing_num_workers,
@@ -86,19 +87,19 @@ class KpExtractionDatasets(KPDatasets):
             assert self.label_column_name in column_names
 
     def get_train_dataset(self):
-        if "train" not in self.tokenized_datasets:
+        if "train" not in self.datasets:
             return None
-        return self.tokenized_datasets["train"]
+        return self.datasets["train"]
 
     def get_eval_dataset(self):
-        if "validation" not in self.tokenized_datasets:
+        if "validation" not in self.datasets:
             return None
-        return self.tokenized_datasets["validation"]
+        return self.datasets["validation"]
 
     def get_test_dataset(self):
-        if "test" not in self.tokenized_datasets:
+        if "test" not in self.datasets:
             return None
-        return self.tokenized_datasets["test"]
+        return self.datasets["test"]
 
     def tokenize_and_align_labels_(self, examples):
         tokenized_inputs = self.tokenizer(
@@ -142,8 +143,53 @@ class KpExtractionDatasets(KPDatasets):
 
         return tokenized_inputs
 
-    def get_extracted_keyphrases(self, split_name):
-        pass
+    def get_predicted_labels(self, predictions):
+        self.datasets = "g"
 
-    def extract_kp_from_tags(self, examples, i):
-        
+    def get_extracted_keyphrases(self, predicted_labels, split_name="test"):
+        assert self.datasets[split_name].num_rows == len(
+            predicted_labels
+        ), "number of rows in original dataset and predicted labels are not same"
+        self.predicted_labels = predicted_labels
+        self.datasets[split_name] = self.datasets[split_name].map(
+            self.extract_kp_from_tags,
+            num_proc=self.data_args.preprocessing_num_workers,
+            with_indices=True,
+        )
+        return self.datasets[split_name]["extracted_keyphrase"]
+
+    def extract_kp_from_tags(self, examples, idx):
+        ids = examples["input_ids"]
+        tokens = self.tokenizer.convert_ids_to_tokens(ids, skip_special_tokens=True)
+        tags = self.predicted_labels[idx]
+        assert len(tokens) == len(
+            tags
+        ), "number of tags in prediction and tokens are not same for {}th".format(idx)
+        all_kps = []
+        current_kp = []
+        prev_tag = None
+        token_ids = self.tokenizer.convert_tokens_to_ids(
+            tokens
+        )  # needed so that we can use batch decode directly and not mess up with convert tokens to string algorithm
+        for id, token, tag in zip(token_ids, tokens, tags):
+            if tag == "O" and len(current_kp) > 0:  # current kp ends
+                all_kps.append(current_kp)
+                current_kp = []
+            elif tag == "B":  # a new kp starts
+                if len(current_kp) > 0:
+                    all_kps.append(current_kp)
+                current_kp = []
+                current_kp.append(id)
+            elif tag == "I":  # it is part of current kp so just append
+                current_kp.append(id)
+        if len(current_kp) > 0:  # check for the last KP in sequence
+            all_kps.append(current_kp)
+
+        extracted_kps = self.tokenizer.batch_decode(
+            all_kps,
+            skip_special_tokens=True,
+            clean_up_tokenization_spaces=True,
+        )
+        examples["extracted_keyphrase"] = extracted_kps
+
+        return examples

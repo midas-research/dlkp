@@ -266,8 +266,6 @@ def run_extraction_model(model_args, data_args, training_args):
 
         # Save predictions
         def get_kp_from_BIO(examples, i):
-            # kps= []
-            # for i in range(len(prediction)):
             ids = examples["input_ids"]
             # print(examples.keys())
             # print(tags)
@@ -280,7 +278,7 @@ def run_extraction_model(model_args, data_args, training_args):
                 # print(len(tag_), len(ids))
                 assert len(tag_) == len(tokens)
                 for j, tag in enumerate(tag_):
-                    id = ids[j + 1]
+                    id = ids[j + 1] 
 
                     if tag == "O" and len(ckp) > 0:
 
