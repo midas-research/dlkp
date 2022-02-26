@@ -28,6 +28,7 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 import numpy as np
+import pandas as pd
 
 import transformers
 from transformers import (
@@ -153,8 +154,11 @@ def run_extraction_model(model_args, data_args, training_args):
         config.pad_token_id = config.eos_token_id
 
     # data
+    logging.info("loading kp dataset")
     dataset = KpExtractionDatasets(data_args, tokenizer)
     num_labels = dataset.num_labels
+    logging.info("tokeenize and allign laebls")
+    dataset.tokenize_and_align_labels()
     train_dataset = dataset.get_train_dataset()
     eval_dataset = dataset.get_eval_dataset()
     test_dataset = dataset.get_test_dataset()
@@ -187,7 +191,7 @@ def run_extraction_model(model_args, data_args, training_args):
     )
 
     # Initialize our Trainer
-    trainer = TRAINER_DICT[data_args.task_name](
+    trainer = TRAINER_DICT["crf" if model_args.use_CRF else "token"](
         model=model,
         args=training_args,
         train_dataset=train_dataset if training_args.do_train else None,
@@ -240,18 +244,18 @@ def run_extraction_model(model_args, data_args, training_args):
     if training_args.do_predict:
         logger.info("*** Predict ***")
 
-        assert test_dataset is not None
+        assert test_dataset is not None, "test data is none"
         predictions, labels, metrics = trainer.predict(test_dataset)
         # if model_args.use_CRF is False:
         predictions = np.argmax(predictions, axis=2)
 
         # Remove ignored index (special tokens)
         predicted_labels = [
-            [label_list[p] for (p, l) in zip(prediction, label) if l != -100]
+            [dataset.id_to_label[p] for (p, l) in zip(prediction, label) if l != -100]
             for prediction, label in zip(predictions, labels)
         ]
         true_labels = [
-            [label_list[l] for (p, l) in zip(prediction, label) if l != -100]
+            [dataset.id_to_label[l] for (p, l) in zip(prediction, label) if l != -100]
             for prediction, label in zip(predictions, labels)
         ]
 
@@ -264,74 +268,6 @@ def run_extraction_model(model_args, data_args, training_args):
                     logger.info(f"  {key} = {value}")
                     writer.write(f"{key} = {value}\n")
 
-        # Save predictions
-        def get_kp_from_BIO(examples, i):
-            ids = examples["input_ids"]
-            # print(examples.keys())
-            # print(tags)
-            def mmkp(tag_):
-                current_kps = []
-                ckp = []
-                prev_tag = None
-                tokens = tokenizer.convert_ids_to_tokens(ids, skip_special_tokens=True)
-                print(len(tokens), len(tag_))
-                # print(len(tag_), len(ids))
-                assert len(tag_) == len(tokens)
-                for j, tag in enumerate(tag_):
-                    id = ids[j + 1] 
-
-                    if tag == "O" and len(ckp) > 0:
-
-                        current_kps.append(ckp)
-                        ckp = []
-                    elif tag == "B":
-                        # print(ckp, tag)
-                        if (
-                            tokenizer.convert_ids_to_tokens(id).startswith("##")
-                            or prev_tag == "B"
-                        ):
-                            ckp.append(id)
-                        else:
-                            if len(ckp) > 0:
-                                current_kps.append(ckp)
-                                ckp = []
-
-                            ckp.append(id)
-                            # print(ckp, id)
-
-                    elif tag == "I" and len(ckp) > 0:
-                        ckp.append(id)
-                    prev_tag = tag
-                decoded_kps = []
-                if len(ckp) > 0:
-                    current_kps.append(ckp)
-                if len(current_kps) > 0:
-                    decoded_kps = tokenizer.batch_decode(
-                        current_kps,
-                        skip_special_tokens=True,
-                        clean_up_tokenization_spaces=True,
-                    )
-                    # print(decoded_kps)
-                return decoded_kps
-
-            tags = predicted_labels[i]
-            decoded_kps = mmkp(tags)
-
-            ttgs = true_labels[i]
-            eekp = mmkp(ttgs)
-
-            # examples['kp_predicted']= decoded_kps
-            examples["kp_predicted"] = list(dict.fromkeys(decoded_kps))
-            examples["eekp"] = list(dict.fromkeys(eekp))
-            # examples['eekp']= eekp
-            # else:
-            #     examples['kp_predicted']= ['<dummy_kp>']
-            if id not in examples:
-                examples["id"] = i
-            return examples
-
-        import pandas as pd
-
         output_test_predictions_file = os.path.join(
             training_args.output_dir, "test_predictions.csv"
         )
@@ -339,24 +275,10 @@ def run_extraction_model(model_args, data_args, training_args):
             training_args.output_dir, "test_predictions_BIO.txt"
         )
         if trainer.is_world_process_zero():
-            print(test_dataset, len(test_dataset["id"]))
-            ppid = test_dataset["id"]
-            # ekp= test_dataset['extractive_keyphrases']
-
-            test_dataset = test_dataset.map(
-                get_kp_from_BIO,
-                num_proc=data_args.preprocessing_num_workers,
-                with_indices=True,
+            predicted_kps = dataset.get_extracted_keyphrases(
+                predicted_labels=predicted_labels
             )
-            #  input_columns= ['paper_id','input_ids','extractive_keyphrases']
-            print(test_dataset, " agian")
-            df = pd.DataFrame.from_dict(
-                {
-                    "id": ppid,
-                    "extractive_keyphrase": test_dataset["eekp"],
-                    "predicted_keyphrases": test_dataset["kp_predicted"],
-                }
-            )
+            df = pd.DataFrame.from_dict({"extractive_keyphrase": predicted_kps})
             df.to_csv(output_test_predictions_file, index=False)
 
             # get BIO tag files
@@ -366,6 +288,3 @@ def run_extraction_model(model_args, data_args, training_args):
                     writer.write(" ".join(prediction) + "\n")
 
     return results
-
-
-def 
