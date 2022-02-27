@@ -99,15 +99,19 @@ class KpExtractionDatasets(KPDatasets):
             return None
         return self.datasets["test"]
 
-    def tokenize_and_align_labels_(self, examples):
-        tokenized_inputs = self.tokenizer(
-            examples[self.text_column_name],
+    def tokenize_text(self, txt):
+        tokenized_text = self.tokenizer(
+            txt,
             padding=self.padding,
             truncation=True,
             # We use this argument because the texts in our dataset are lists of words (with a label for each word).
             is_split_into_words=True,
             return_special_tokens_mask=True,
         )
+        return tokenized_text
+
+    def tokenize_and_align_labels_(self, examples):
+        tokenized_inputs = self.tokenize_text(examples[self.text_column_name])
         labels = []
         if self.label_column_name is None:
             return tokenized_inputs
