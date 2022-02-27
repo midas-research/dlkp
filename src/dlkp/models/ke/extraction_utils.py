@@ -83,6 +83,32 @@ class DataTrainingArguments:
             "help": "An optional input test data file to predict on (a csv or JSON file)."
         },
     )
+
+    text_column_name: Optional[str] = field(
+        default=None,
+        metadata={
+            "help": "An optional input test data file to predict on (a csv or JSON file)."
+        },
+    )
+    label_column_name: Optional[str] = field(
+        default=None,
+        metadata={
+            "help": "An optional input test data file to predict on (a csv or JSON file)."
+        },
+    )
+    train_data_percent: Optional[int] = field(
+        default=100,
+        metadata={"help": "percentage of train file to be used for training purpose"},
+    )
+    valid_data_percent: Optional[int] = field(
+        default=0,
+        metadata={"help": "percentage of train file to be used for validation purpose"},
+    )
+    test_data_percent: Optional[int] = field(
+        default=0,
+        metadata={"help": "percentage of train file to be used for testing purpose"},
+    )
+
     overwrite_cache: bool = field(
         default=False,
         metadata={"help": "Overwrite the cached training and evaluation sets"},
@@ -113,7 +139,7 @@ class DataTrainingArguments:
         },
     )
     dataset_name: Optional[str] = field(
-        default="midas/inspec",
+        default=None,
         metadata={"help": "The name of the dataset to use (via the datasets library)."},
     )
     dataset_config_name: Optional[str] = field(
@@ -134,6 +160,7 @@ class DataTrainingArguments:
             self.dataset_name is None
             and self.train_file is None
             and self.validation_file is None
+            and self.test_file is None
         ):
             raise ValueError(
                 "Need either a dataset name or a training/validation file."
@@ -151,4 +178,58 @@ class DataTrainingArguments:
                     "csv",
                     "json",
                 ], "`validation_file` should be a csv or a json file."
+            if self.test_file is not None:
+                extension = self.test_file.split(".")[-1]
+                assert extension in [
+                    "csv",
+                    "json",
+                ], "`test_file` should be a csv or a json file."
         self.task_name = self.task_name.lower()
+        assert (
+            self.train_data_percent + self.test_data_percent + self.valid_data_percent
+            == 100
+        )
+
+
+def tokenize_and_align_labels(
+    examples, tokenizer, text_column_name, padding, label_column_name=None
+):
+    tokenized_inputs = tokenizer(
+        examples[text_column_name],
+        padding=padding,
+        truncation=True,
+        # We use this argument because the texts in our dataset are lists of words (with a label for each word).
+        is_split_into_words=True,
+    )
+    labels = []
+    for i, label in enumerate(examples[label_column_name]):
+        word_ids = tokenized_inputs.word_ids(batch_index=i)
+        previous_word_idx = None
+        label_ids = []
+        for word_idx in word_ids:
+            # Special tokens have a word id that is None. We set the label to -100 so they are automatically
+            # ignored in the loss function.
+            if word_idx is None:
+                label_ids.append(-100)
+                # label_ids.append(2)  # to avoid error change -100 to 'O' tag i.e. 2 class
+            # We set the label for the first token of each word.
+            elif word_idx != previous_word_idx:
+                label_ids.append(label_to_id[label[word_idx]])
+            # For the other tokens in a word, we set the label to either the current label or -100, depending on
+            # the label_all_tokens flag.
+            else:
+                label_ids.append(
+                    label_to_id[label[word_idx]] if data_args.label_all_tokens else -100
+                )
+                # to avoid error change -100 to 'O' tag i.e. 2 class
+                # label_ids.append(label_to_id[label[word_idx]] if data_args.label_all_tokens else 2)
+            previous_word_idx = word_idx
+
+        labels.append(label_ids)
+    if data_args.task_name == "guided":
+        tokenized_inputs["guide_embed"] = examples["guide_embed"]
+    tokenized_inputs["labels"] = labels
+    # tokenized_inputs['paper_id']= examples['paper_id']
+    # tokenized_inputs['extractive_keyphrases']= examples['extractive_keyphrases']
+
+    return tokenized_inputs
