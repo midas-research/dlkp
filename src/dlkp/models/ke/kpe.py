@@ -55,8 +55,8 @@ from .transformer.token_classification_models import (
 from .crf.crf_trainer import CRF_Trainer
 
 # from extraction_utils import ModelArguments, DataTrainingArguments
-from ...kp_metrics.metrics import compute_metrics
-from ...kp_dataset.datasets import KpExtractionDatasets
+from ...metrics.metrics import compute_metrics
+from ...datasets.extractions import KpExtractionDatasets
 
 logger = logging.getLogger(__name__)
 
