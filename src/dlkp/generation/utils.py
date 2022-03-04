@@ -56,7 +56,7 @@ class KpGenModelArguments:
 
 
 @dataclass
-class DataTrainingArguments:
+class KpGenDataTrainingArguments:
     """
     Arguments pertaining to what data we are going to input our model for training and eval.
     """
@@ -71,16 +71,16 @@ class DataTrainingArguments:
             "help": "The configuration name of the dataset to use (via the datasets library)."
         },
     )
-    question_column: Optional[str] = field(
-        default="question",
+    text_column_name: Optional[str] = field(
+        default="documents",
         metadata={
-            "help": "The name of the column in the datasets containing the questions (for question answering)."
+            "help": "The name of the column in the datasets containing the text (for keyphrase extraction)."
         },
     )
-    answer_column: Optional[str] = field(
-        default="answers",
+    keyphrases_column_name: Optional[str] = field(
+        default="keyphrases",
         metadata={
-            "help": "The name of the column in the datasets containing the answers (for question answering)."
+            "help": "The name of the column in the datasets containing the keyphrases (for keyphrase extraction)."
         },
     )
     train_file: Optional[str] = field(
@@ -113,18 +113,18 @@ class DataTrainingArguments:
             "than this will be truncated, sequences shorter will be padded."
         },
     )
-    max_answer_length: int = field(
+    max_keyphrases_length: int = field(
         default=30,
         metadata={
-            "help": "The maximum length of an answer that can be generated. This is needed because the start "
+            "help": "The maximum length of output keyphrases that can be generated. This is needed because the start "
             "and end predictions are not conditioned on one another."
         },
     )
-    val_max_answer_length: Optional[int] = field(
+    val_max_keyphrases_length: Optional[int] = field(
         default=None,
         metadata={
             "help": "The maximum total sequence length for validation target text after tokenization. Sequences longer "
-            "than this will be truncated, sequences shorter will be padded. Will default to `max_answer_length`."
+            "than this will be truncated, sequences shorter will be padded. Will default to `max_keyphrases_length`."
             "This argument is also used to override the ``max_length`` param of ``model.generate``, which is used "
             "during ``evaluate`` and ``predict``."
         },
@@ -156,18 +156,6 @@ class DataTrainingArguments:
         metadata={
             "help": "For debugging purposes or quicker training, truncate the number of prediction examples to this "
             "value if set."
-        },
-    )
-    version_2_with_negative: bool = field(
-        default=False,
-        metadata={"help": "If true, some of the examples do not have an answer."},
-    )
-    null_score_diff_threshold: float = field(
-        default=0.0,
-        metadata={
-            "help": "The threshold used to select the null answer: if the best answer has a score that is less than "
-            "the score of the null answer minus this threshold, the null answer is selected for this example. "
-            "Only useful when `version_2_with_negative=True`."
         },
     )
     doc_stride: int = field(
