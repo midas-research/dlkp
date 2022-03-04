@@ -56,7 +56,7 @@ from .crf.crf_trainer import CRF_Trainer
 
 # from extraction_utils import ModelArguments, DataTrainingArguments
 from ...metrics.metrics import compute_metrics
-from ...datasets.extractions import KpExtractionDatasets
+from ...datasets.extraction import KpExtractionDatasets
 
 logger = logging.getLogger(__name__)
 
