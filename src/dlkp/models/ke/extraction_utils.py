@@ -3,6 +3,7 @@ import os
 import sys
 from dataclasses import dataclass, field
 from typing import Optional
+
 from transformers import TrainingArguments
 
 
@@ -13,39 +14,27 @@ class ModelArguments:
     """
 
     model_name_or_path: str = field(
-        metadata={
-            "help": "Path to pretrained model or model identifier from huggingface.co/models"
-        }
+        metadata={"help": "Path to pretrained model or model identifier from huggingface.co/models"}
     )
     model_family_name: str = field(
         default="auto",
-        metadata={
-            "help": "name of the family of model, bert, longformer, reformer etc."
-        },
+        metadata={"help": "name of the family of model, bert, longformer, reformer etc."},
     )
     config_name: Optional[str] = field(
         default=None,
-        metadata={
-            "help": "Pretrained config name or path if not the same as model_name"
-        },
+        metadata={"help": "Pretrained config name or path if not the same as model_name"},
     )
     tokenizer_name: Optional[str] = field(
         default=None,
-        metadata={
-            "help": "Pretrained tokenizer name or path if not the same as model_name"
-        },
+        metadata={"help": "Pretrained tokenizer name or path if not the same as model_name"},
     )
     cache_dir: Optional[str] = field(
         default=None,
-        metadata={
-            "help": "Where do you want to store the pretrained models downloaded from huggingface.co"
-        },
+        metadata={"help": "Where do you want to store the pretrained models downloaded from huggingface.co"},
     )
     model_revision: str = field(
         default="main",
-        metadata={
-            "help": "The specific model version to use (can be a branch name, tag name or commit id)."
-        },
+        metadata={"help": "The specific model version to use (can be a branch name, tag name or commit id)."},
     )
     use_CRF: bool = field(
         default=False,
@@ -63,9 +52,7 @@ class DataTrainingArguments:
     Arguments pertaining to what data we are going to input our model for training and eval.
     """
 
-    task_name: Optional[str] = field(
-        default="token", metadata={"help": "The name of the task token, crf"}
-    )
+    task_name: Optional[str] = field(default="token", metadata={"help": "The name of the task token, crf"})
 
     train_file: Optional[str] = field(
         default=None,
@@ -73,28 +60,20 @@ class DataTrainingArguments:
     )
     validation_file: Optional[str] = field(
         default=None,
-        metadata={
-            "help": "An optional input evaluation data file to evaluate on (a csv or JSON file)."
-        },
+        metadata={"help": "An optional input evaluation data file to evaluate on (a csv or JSON file)."},
     )
     test_file: Optional[str] = field(
         default=None,
-        metadata={
-            "help": "An optional input test data file to predict on (a csv or JSON file)."
-        },
+        metadata={"help": "An optional input test data file to predict on (a csv or JSON file)."},
     )
 
     text_column_name: Optional[str] = field(
         default=None,
-        metadata={
-            "help": "An optional input test data file to predict on (a csv or JSON file)."
-        },
+        metadata={"help": "An optional input test data file to predict on (a csv or JSON file)."},
     )
     label_column_name: Optional[str] = field(
         default=None,
-        metadata={
-            "help": "An optional input test data file to predict on (a csv or JSON file)."
-        },
+        metadata={"help": "An optional input test data file to predict on (a csv or JSON file)."},
     )
     train_data_percent: Optional[int] = field(
         default=100,
@@ -134,9 +113,7 @@ class DataTrainingArguments:
     )
     return_entity_level_metrics: bool = field(
         default=False,
-        metadata={
-            "help": "Whether to return all the entity levels during evaluation or just the overall ones."
-        },
+        metadata={"help": "Whether to return all the entity levels during evaluation or just the overall ones."},
     )
     dataset_name: Optional[str] = field(
         default=None,
@@ -144,9 +121,7 @@ class DataTrainingArguments:
     )
     dataset_config_name: Optional[str] = field(
         default="extraction",
-        metadata={
-            "help": "The configuration name of the dataset to use (via the datasets library)."
-        },
+        metadata={"help": "The configuration name of the dataset to use (via the datasets library)."},
     )
     cache_file_name: Optional[str] = field(
         default=None,
@@ -162,9 +137,7 @@ class DataTrainingArguments:
             and self.validation_file is None
             and self.test_file is None
         ):
-            raise ValueError(
-                "Need either a dataset name or a training/validation file."
-            )
+            raise ValueError("Need either a dataset name or a training/validation file.")
         else:
             if self.train_file is not None:
                 extension = self.train_file.split(".")[-1]
@@ -185,15 +158,10 @@ class DataTrainingArguments:
                     "json",
                 ], "`test_file` should be a csv or a json file."
         self.task_name = self.task_name.lower()
-        assert (
-            self.train_data_percent + self.test_data_percent + self.valid_data_percent
-            == 100
-        )
+        assert self.train_data_percent + self.test_data_percent + self.valid_data_percent == 100
 
 
-def tokenize_and_align_labels(
-    examples, tokenizer, text_column_name, padding, label_column_name=None
-):
+def tokenize_and_align_labels(examples, tokenizer, text_column_name, padding, label_column_name=None):
     tokenized_inputs = tokenizer(
         examples[text_column_name],
         padding=padding,
@@ -218,9 +186,7 @@ def tokenize_and_align_labels(
             # For the other tokens in a word, we set the label to either the current label or -100, depending on
             # the label_all_tokens flag.
             else:
-                label_ids.append(
-                    label_to_id[label[word_idx]] if data_args.label_all_tokens else -100
-                )
+                label_ids.append(label_to_id[label[word_idx]] if data_args.label_all_tokens else -100)
                 # to avoid error change -100 to 'O' tag i.e. 2 class
                 # label_ids.append(label_to_id[label[word_idx]] if data_args.label_all_tokens else 2)
             previous_word_idx = word_idx

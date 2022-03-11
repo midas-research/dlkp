@@ -1,9 +1,10 @@
 # add models having crf classification layer with option of bilstm layers
 
-from .crf_utils import *
-from typing import List, Tuple, Dict, Union
+from typing import Dict, List, Tuple, Union
 
 import torch
+
+from .crf_utils import *
 
 VITERBI_DECODING = Tuple[List[int], float]
 
@@ -64,9 +65,7 @@ class ConditionalRandomField(torch.nn.Module):
             torch.nn.init.normal_(self.start_transitions)
             torch.nn.init.normal_(self.end_transitions)
 
-    def _input_likelihood(
-        self, logits: torch.Tensor, mask: torch.BoolTensor
-    ) -> torch.Tensor:
+    def _input_likelihood(self, logits: torch.Tensor, mask: torch.BoolTensor) -> torch.Tensor:
         """
         Computes the (batch_size,) denominator term for the log-likelihood, which is the
         sum of the likelihoods across all possible state sequences.
@@ -100,9 +99,7 @@ class ConditionalRandomField(torch.nn.Module):
 
             # In valid positions (mask == True) we want to take the logsumexp over the current_tag dimension
             # of `inner`. Otherwise (mask == False) we want to retain the previous alpha.
-            alpha = logsumexp(inner, 1) * mask[i].view(batch_size, 1) + alpha * (
-                ~mask[i]
-            ).view(batch_size, 1)
+            alpha = logsumexp(inner, 1) * mask[i].view(batch_size, 1) + alpha * (~mask[i]).view(batch_size, 1)
 
         # Every sequence needs to end with a transition to the stop_tag.
         if self.include_start_end_transitions:
@@ -113,9 +110,7 @@ class ConditionalRandomField(torch.nn.Module):
         # Finally we log_sum_exp along the num_tags dim, result is (batch_size,)
         return logsumexp(stops)
 
-    def _joint_likelihood(
-        self, logits: torch.Tensor, tags: torch.Tensor, mask: torch.BoolTensor
-    ) -> torch.Tensor:
+    def _joint_likelihood(self, logits: torch.Tensor, tags: torch.Tensor, mask: torch.BoolTensor) -> torch.Tensor:
         """
         Computes the numerator term for the log-likelihood, which is just score(inputs, tags)
         """
@@ -163,18 +158,14 @@ class ConditionalRandomField(torch.nn.Module):
 
         # Add the last input if it's not masked.
         last_inputs = logits[-1]  # (batch_size, num_tags)
-        last_input_score = last_inputs.gather(
-            1, last_tags.view(-1, 1)
-        )  # (batch_size, 1)
+        last_input_score = last_inputs.gather(1, last_tags.view(-1, 1))  # (batch_size, 1)
         last_input_score = last_input_score.squeeze()  # (batch_size,)
 
         score = score + last_transition_score + last_input_score * mask[-1]
 
         return score
 
-    def forward(
-        self, inputs: torch.Tensor, tags: torch.Tensor, mask: torch.BoolTensor = None
-    ) -> torch.Tensor:
+    def forward(self, inputs: torch.Tensor, tags: torch.Tensor, mask: torch.BoolTensor = None) -> torch.Tensor:
         """
         Computes the log likelihood.
         """
@@ -226,33 +217,21 @@ class ConditionalRandomField(torch.nn.Module):
         transitions = torch.Tensor(num_tags + 2, num_tags + 2).fill_(-10000.0)
 
         # Apply transition constraints
-        constrained_transitions = self.transitions * self._constraint_mask[
-            :num_tags, :num_tags
-        ] + -10000.0 * (1 - self._constraint_mask[:num_tags, :num_tags])
+        constrained_transitions = self.transitions * self._constraint_mask[:num_tags, :num_tags] + -10000.0 * (
+            1 - self._constraint_mask[:num_tags, :num_tags]
+        )
         transitions[:num_tags, :num_tags] = constrained_transitions.data
 
         if self.include_start_end_transitions:
-            transitions[
+            transitions[start_tag, :num_tags] = self.start_transitions.detach() * self._constraint_mask[
                 start_tag, :num_tags
-            ] = self.start_transitions.detach() * self._constraint_mask[
-                start_tag, :num_tags
-            ].data + -10000.0 * (
-                1 - self._constraint_mask[start_tag, :num_tags].detach()
-            )
-            transitions[
+            ].data + -10000.0 * (1 - self._constraint_mask[start_tag, :num_tags].detach())
+            transitions[:num_tags, end_tag] = self.end_transitions.detach() * self._constraint_mask[
                 :num_tags, end_tag
-            ] = self.end_transitions.detach() * self._constraint_mask[
-                :num_tags, end_tag
-            ].data + -10000.0 * (
-                1 - self._constraint_mask[:num_tags, end_tag].detach()
-            )
+            ].data + -10000.0 * (1 - self._constraint_mask[:num_tags, end_tag].detach())
         else:
-            transitions[start_tag, :num_tags] = -10000.0 * (
-                1 - self._constraint_mask[start_tag, :num_tags].detach()
-            )
-            transitions[:num_tags, end_tag] = -10000.0 * (
-                1 - self._constraint_mask[:num_tags, end_tag].detach()
-            )
+            transitions[start_tag, :num_tags] = -10000.0 * (1 - self._constraint_mask[start_tag, :num_tags].detach())
+            transitions[:num_tags, end_tag] = -10000.0 * (1 - self._constraint_mask[:num_tags, end_tag].detach())
 
         best_paths = []
         # Pad the max sequence length by 2 to account for start_tag + end_tag.

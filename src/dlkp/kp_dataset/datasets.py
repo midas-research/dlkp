@@ -1,6 +1,8 @@
-import os, sys
+import os
+import sys
 from dataclasses import dataclass, field
 from typing import Optional
+
 from datasets import ClassLabel, load_dataset
 
 
@@ -38,9 +40,7 @@ class KpExtractionDatasets(KPDatasets):
     def load_kp_datasets(self):
         if self.data_args.dataset_name is not None:
             # Downloading and loading a dataset from the hub.
-            self.datasets = load_dataset(
-                self.data_args.dataset_name, self.data_args.dataset_config_name
-            )
+            self.datasets = load_dataset(self.data_args.dataset_name, self.data_args.dataset_config_name)
         else:
             data_files = {}
             if self.data_args.train_file is not None:
@@ -63,9 +63,7 @@ class KpExtractionDatasets(KPDatasets):
             column_names = self.datasets["test"].column_names
             features = self.datasets["test"].features
         else:
-            raise AssertionError(
-                "neither train, validation nor test dataset is availabel"
-            )
+            raise AssertionError("neither train, validation nor test dataset is availabel")
 
         if self.text_column_name is None:
             self.text_column_name = (
@@ -75,9 +73,7 @@ class KpExtractionDatasets(KPDatasets):
         assert self.text_column_name in column_names
 
         if self.label_column_name is None:
-            self.label_column_name = (
-                "doc_bio_tags" if "doc_bio_tags" in column_names else None
-            )
+            self.label_column_name = "doc_bio_tags" if "doc_bio_tags" in column_names else None
             if len(column_names) > 2:
                 self.label_column_name = column_names[2]
 
@@ -132,11 +128,7 @@ class KpExtractionDatasets(KPDatasets):
                 # For the other tokens in a word, we set the label to either the current label or -100, depending on
                 # the label_all_tokens flag.
                 else:
-                    label_ids.append(
-                        self.label_to_id[label[word_idx]]
-                        if self.data_args.label_all_tokens
-                        else -100
-                    )
+                    label_ids.append(self.label_to_id[label[word_idx]] if self.data_args.label_all_tokens else -100)
                     # to avoid error change -100 to 'O' tag i.e. 2 class
                     # label_ids.append(label_to_id[label[word_idx]] if data_args.label_all_tokens else 2)
                 previous_word_idx = word_idx
@@ -165,11 +157,7 @@ class KpExtractionDatasets(KPDatasets):
         ids = examples["input_ids"]
         atn_mask = examples["special_tokens_mask"]
         tokens = self.tokenizer.convert_ids_to_tokens(ids, skip_special_tokens=True)
-        tags = [
-            self.id_to_label[p]
-            for (p, m) in zip(self.predicted_labels[idx], atn_mask)
-            if m == 0
-        ]
+        tags = [self.id_to_label[p] for (p, m) in zip(self.predicted_labels[idx], atn_mask) if m == 0]
         assert len(tokens) == len(
             tags
         ), "number of tags (={}) in prediction and tokens(={}) are not same for {}th".format(

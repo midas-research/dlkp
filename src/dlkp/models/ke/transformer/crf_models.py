@@ -1,17 +1,18 @@
 # all token classification model with crf head
-from transformers import (
-    AutoModelForPreTraining,
+import collections
+
+from transformers import (  # PretrainedModel,
     AutoModel,
+    AutoModelForPreTraining,
+    AutoModelForTokenClassification,
     BertModel,
     BertPreTrainedModel,
     LongformerModel,
     PreTrainedModel,
-    AutoModelForTokenClassification,
-    # PretrainedModel,
 )
 from transformers.modeling_outputs import TokenClassifierOutput
-import collections
 from transformers.models.longformer.modeling_longformer import LongformerPreTrainedModel
+
 from ..crf.crf import ConditionalRandomField
 
 
@@ -42,9 +43,7 @@ class AutoCRFforTokenClassification(AutoModelForTokenClassification):
         output_attentions=None,
         return_dict=None,
     ):
-        return_dict = (
-            return_dict if return_dict is not None else self.config.use_return_dict
-        )
+        return_dict = return_dict if return_dict is not None else self.config.use_return_dict
 
         outputs = self.base_model(
             input_ids,
@@ -96,9 +95,7 @@ class BERT_CRFforTokenClassification(BertPreTrainedModel):
         self.classifier = nn.Linear(config.hidden_size, config.num_labels)
         # self.crf= nn.Linear(config.num_labels,1)
         # self.crf= ConditionalRandomField(self.num_labels)
-        self.crf = ConditionalRandomField(
-            self.num_labels, label_encoding="BIO", idx2tag={0: "B", 1: "I", 2: "0"}
-        )
+        self.crf = ConditionalRandomField(self.num_labels, label_encoding="BIO", idx2tag={0: "B", 1: "I", 2: "0"})
         self.init_weights()
 
     def forward(
@@ -113,9 +110,7 @@ class BERT_CRFforTokenClassification(BertPreTrainedModel):
         output_attentions=None,
         return_dict=None,
     ):
-        return_dict = (
-            return_dict if return_dict is not None else self.config.use_return_dict
-        )
+        return_dict = return_dict if return_dict is not None else self.config.use_return_dict
 
         outputs = self.bert(
             input_ids,
@@ -181,9 +176,7 @@ class Longformer_CRFforTokenClassification(LongformerPreTrainedModel):
         output_attentions=None,
         return_dict=None,
     ):
-        return_dict = (
-            return_dict if return_dict is not None else self.config.use_return_dict
-        )
+        return_dict = return_dict if return_dict is not None else self.config.use_return_dict
 
         outputs = self.longformer(
             input_ids,

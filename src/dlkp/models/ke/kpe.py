@@ -29,34 +29,31 @@ from typing import Optional
 
 import numpy as np
 import pandas as pd
-
 import transformers
 from transformers import (
     AutoConfig,
     AutoModelForTokenClassification,
     AutoTokenizer,
+    BertForTokenClassification,
     DataCollatorForTokenClassification,
     HfArgumentParser,
     PreTrainedTokenizerFast,
     Trainer,
     TrainingArguments,
     set_seed,
-    BertForTokenClassification,
 )
 from transformers.trainer_utils import get_last_checkpoint, is_main_process
 
-from .transformer.crf_models import (
-    BERT_CRFforTokenClassification,
-    AutoCRFforTokenClassification,
-)
-from .transformer.token_classification_models import (
-    LongformerForTokenClassification,
-)
-from .crf.crf_trainer import CRF_Trainer
+from ...kp_dataset.datasets import KpExtractionDatasets
 
 # from extraction_utils import ModelArguments, DataTrainingArguments
 from ...kp_metrics.metrics import compute_metrics
-from ...kp_dataset.datasets import KpExtractionDatasets
+from .crf.crf_trainer import CRF_Trainer
+from .transformer.crf_models import (
+    AutoCRFforTokenClassification,
+    BERT_CRFforTokenClassification,
+)
+from .transformer.token_classification_models import LongformerForTokenClassification
 
 logger = logging.getLogger(__name__)
 
@@ -86,11 +83,7 @@ def run_extraction_model(model_args, data_args, training_args):
 
     # Detecting last checkpoint.
     last_checkpoint = None
-    if (
-        os.path.isdir(training_args.output_dir)
-        and training_args.do_train
-        and not training_args.overwrite_output_dir
-    ):
+    if os.path.isdir(training_args.output_dir) and training_args.do_train and not training_args.overwrite_output_dir:
         last_checkpoint = get_last_checkpoint(training_args.output_dir)
         if last_checkpoint is None and len(os.listdir(training_args.output_dir)) > 0:
             raise ValueError(
@@ -132,9 +125,7 @@ def run_extraction_model(model_args, data_args, training_args):
     # The .from_pretrained methods guarantee that only one local process can concurrently
     # download model & vocab.
     tokenizer = AutoTokenizer.from_pretrained(
-        model_args.tokenizer_name
-        if model_args.tokenizer_name
-        else model_args.model_name_or_path,
+        model_args.tokenizer_name if model_args.tokenizer_name else model_args.model_name_or_path,
         cache_dir=model_args.cache_dir,
         use_fast=True,
         add_prefix_space=True,
@@ -156,20 +147,14 @@ def run_extraction_model(model_args, data_args, training_args):
 
     # config
     config = AutoConfig.from_pretrained(
-        model_args.config_name
-        if model_args.config_name
-        else model_args.model_name_or_path,
+        model_args.config_name if model_args.config_name else model_args.model_name_or_path,
         num_labels=num_labels,
         cache_dir=model_args.cache_dir,
     )
     config.use_CRF = model_args.use_CRF
 
     # model
-    model = (
-        AutoCRFforTokenClassification
-        if model_args.use_CRF
-        else AutoModelForTokenClassification
-    )
+    model = AutoCRFforTokenClassification if model_args.use_CRF else AutoModelForTokenClassification
     model = model.from_pretrained(
         model_args.model_name_or_path,
         config=config,
@@ -177,9 +162,7 @@ def run_extraction_model(model_args, data_args, training_args):
     )
 
     # Data collator
-    data_collator = DataCollatorForTokenClassification(
-        tokenizer, pad_to_multiple_of=8 if training_args.fp16 else None
-    )
+    data_collator = DataCollatorForTokenClassification(tokenizer, pad_to_multiple_of=8 if training_args.fp16 else None)
 
     # Initialize our Trainer
     trainer = TRAINER_DICT["crf" if model_args.use_CRF else "token"](
@@ -212,18 +195,14 @@ def run_extraction_model(model_args, data_args, training_args):
                     writer.write(f"{key} = {value}\n")
 
             # Need to save the state, since Trainer.save_model saves only the tokenizer with the model
-            trainer.state.save_to_json(
-                os.path.join(training_args.output_dir, "trainer_state.json")
-            )
+            trainer.state.save_to_json(os.path.join(training_args.output_dir, "trainer_state.json"))
 
     # Evaluation
     results = {}
     if training_args.do_eval:
         logger.info("*** Evaluate ***")
         results = trainer.evaluate()
-        output_eval_file = os.path.join(
-            training_args.output_dir, "eval_results_KPE.txt"
-        )
+        output_eval_file = os.path.join(training_args.output_dir, "eval_results_KPE.txt")
         if trainer.is_world_process_zero():
             with open(output_eval_file, "w") as writer:
                 logger.info("***** Eval results *****")
@@ -246,25 +225,17 @@ def run_extraction_model(model_args, data_args, training_args):
         #     for prediction in predictions
         # ]
 
-        output_test_results_file = os.path.join(
-            training_args.output_dir, "test_results.txt"
-        )
+        output_test_results_file = os.path.join(training_args.output_dir, "test_results.txt")
         if trainer.is_world_process_zero():
             with open(output_test_results_file, "w") as writer:
                 for key, value in sorted(metrics.items()):
                     logger.info(f"  {key} = {value}")
                     writer.write(f"{key} = {value}\n")
 
-        output_test_predictions_file = os.path.join(
-            training_args.output_dir, "test_predictions.csv"
-        )
-        output_test_predictions_BIO_file = os.path.join(
-            training_args.output_dir, "test_predictions_BIO.txt"
-        )
+        output_test_predictions_file = os.path.join(training_args.output_dir, "test_predictions.csv")
+        output_test_predictions_BIO_file = os.path.join(training_args.output_dir, "test_predictions_BIO.txt")
         if trainer.is_world_process_zero():
-            predicted_kps = dataset.get_extracted_keyphrases(
-                predicted_labels=predictions
-            )
+            predicted_kps = dataset.get_extracted_keyphrases(predicted_labels=predictions)
             df = pd.DataFrame.from_dict({"extractive_keyphrase": predicted_kps})
             df.to_csv(output_test_predictions_file, index=False)
 

@@ -7,3 +7,29 @@ requires = [
     "seqeval"
 ]
 build-backend = "setuptools.build_meta"
+
+[tool.black]
+line-length = 120
+target-version = ['py36', 'py37', 'py38']
+exclude = '''
+(
+  /(
+      \.eggs
+    | \.git
+    | \.pytest_cache
+    | build
+    | dist
+  )/
+)
+'''
+[tool.pytest.ini_options]
+flake8-max-line-length = 210
+flake8-ignore = ["E203", "W503"]  # See https://github.com/PyCQA/pycodestyle/issues/373
+markers = [
+    "integration",
+]
+[tool.mypy]
+ignore_missing_imports = true
+
+[tool.isort]
+profile = "black"
