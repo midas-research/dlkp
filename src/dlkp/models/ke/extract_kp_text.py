@@ -1,11 +1,11 @@
-import os, json
-from .extraction_utils import TrainingArguments, DataTrainingArguments, ModelArguments
+import json
+import os
+
+from .extraction_utils import DataTrainingArguments, ModelArguments, TrainingArguments
 from .kpe import run_extraction_model
 
 
-def extract_from_text(
-    text_list, model_name_or_path, use_CRF=False, output_dir="eval_output"
-):
+def extract_from_text(text_list, model_name_or_path, use_CRF=False, output_dir="eval_output"):
     # if output_dir is None:
     #     output_dir =
     # create a file and pass to extractor

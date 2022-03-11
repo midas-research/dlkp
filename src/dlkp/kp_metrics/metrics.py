@@ -1,6 +1,6 @@
-from seqeval.metrics import accuracy_score, f1_score, precision_score, recall_score
-from seqeval.scheme import IOB2, IOB1
 import numpy as np
+from seqeval.metrics import accuracy_score, f1_score, precision_score, recall_score
+from seqeval.scheme import IOB1, IOB2
 
 
 def compute_metrics(p):
@@ -27,9 +27,7 @@ def compute_metrics(p):
     results = {}
     # print("cal precisi")
     # mode="strict"
-    results["overall_precision"] = precision_score(
-        true_labels, true_predictions, scheme=IOB2
-    )
+    results["overall_precision"] = precision_score(true_labels, true_predictions, scheme=IOB2)
     results["overall_recall"] = recall_score(true_labels, true_predictions, scheme=IOB2)
     # print("cal f1")
     results["overall_f1"] = f1_score(true_labels, true_predictions, scheme=IOB2)

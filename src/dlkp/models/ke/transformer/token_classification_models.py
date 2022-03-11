@@ -7,22 +7,20 @@ from typing import Optional
 
 import numpy as np
 from datasets import ClassLabel, load_dataset, load_metric
-
 from transformers import (
     AutoConfig,
+    AutoModel,
     AutoModelForTokenClassification,
     AutoTokenizer,
-    AutoModel,
     DataCollatorForTokenClassification,
     HfArgumentParser,
+    LongformerForTokenClassification,
     PreTrainedTokenizerFast,
     Trainer,
     TrainingArguments,
     set_seed,
-    LongformerForTokenClassification,
 )
 from transformers.trainer_utils import get_last_checkpoint, is_main_process
-
 
 logger = logging.getLogger(__name__)
 
@@ -51,9 +49,7 @@ class ReformerForTokenClassification(ReformerPreTrainedModel):
         output_attentions=None,
         return_dict=None,
     ):
-        return_dict = (
-            return_dict if return_dict is not None else self.config.use_return_dict
-        )
+        return_dict = return_dict if return_dict is not None else self.config.use_return_dict
 
         outputs = self.reformer(
             input_ids,

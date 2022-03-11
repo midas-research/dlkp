@@ -1,10 +1,11 @@
 from statistics import mode
-from dlkp.models.ke.kpe import run_extraction_model
+
 from dlkp.models.ke.extraction_utils import (
     DataTrainingArguments,
     ModelArguments,
     TrainingArguments,
 )
+from dlkp.models.ke.kpe import run_extraction_model
 
 training_args = TrainingArguments(
     output_dir="/media/nas_mount/Debanjan/amardeep/dlkp_out/inpec_debug_eval",  # todo
