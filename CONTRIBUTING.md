@@ -30,34 +30,23 @@ pipenv install --dev && pipenv shell
 
 or create a python environment of your preference and run
 ```bash
+pip install -r requirements.txt
 pip install -r requirements-dev.txt
 ```
 
 ### tests
-
-To only run typechecks and check the code formatting execute:
-```bash
-pytest flair
-```
 
 To run all basic tests execute:
 ```bash
 pytest
 ```
 
-To run integration tests execute:
-```bash
-pytest --runintegration
-```
-The integration tests will train small models and therefore take more time.
-In general, it is recommended to ensure all basic tests are running through before testing the integration tests 
-
 ### code formatting
 
 To ensure a standardized code style we use the formatter [black](https://github.com/ambv/black) and for standardizing imports we use [isort](https://github.com/PyCQA/isort).
 If your code is not formatted properly, the tests will fail.
 
-You can automatically format the code via `black --config pyproject.toml flair/ && isort src/` in the src root folder.
+You can automatically format the code via `black --config pyproject.toml src/ && isort src/` in the src root folder.
 
 ### pre-commit hook
 
