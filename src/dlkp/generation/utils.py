@@ -184,6 +184,20 @@ class KpGenDataTrainingArguments:
         },
     )
 
+    keyphrase_sep_token: str = field(
+        default="[kp_sep]",
+        metadata={
+            "help": "token which will seprate multiple keyphrases during genration"
+        },
+    )
+
+    task_type: str = field(
+        default="one2many",
+        metadata={
+            "help": "one2many or one2one. one2many if all keyphrase needs to be generatted"
+        },
+    )
+
     def __post_init__(self):
         if (
             self.dataset_name is None
