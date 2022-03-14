@@ -12,7 +12,7 @@ from transformers import (
 from transformers.modeling_outputs import TokenClassifierOutput
 import collections
 from transformers.models.longformer.modeling_longformer import LongformerPreTrainedModel
-from ..crf.crf import ConditionalRandomField
+from .crf import ConditionalRandomField
 
 
 class AutoCRFforTokenClassification(AutoModelForTokenClassification):
