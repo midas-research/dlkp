@@ -1,4 +1,4 @@
-from typing import List, str, Union
+from typing import List, Union
 import transformers
 from transformers import (
     AutoConfig,
@@ -24,7 +24,7 @@ class KeyphraseTagger:
         self, model_name_or_path
     ) -> None:  # TODO use this class in train and eval purpose as well
         self.config = AutoConfig.from_pretrained(model_name_or_path)
-        self.use_crf = self.config.use_crf if self.config.use_crf is not None else False
+        self.use_crf = self.config.use_CRF if self.config.use_CRF is not None else False
         self.id_to_label = {
             0: "B",
             1: "I",
@@ -37,7 +37,7 @@ class KeyphraseTagger:
         )
         model_type = (
             AutoCRFforTokenClassification
-            if self.use_CRF
+            if self.use_crf
             else AutoModelForTokenClassification
         )
 
@@ -61,7 +61,9 @@ class KeyphraseTagger:
         self.datasets = KpExtractionDatasets.load_kp_datasets_from_text(texts)
         # tokenize current datsets
         def tokenize_(txt):
-            return KpExtractionDatasets.tokenize_text(txt, self.tokenizer, "max_length")
+            return KpExtractionDatasets.tokenize_text(
+                txt["document"].split(), self.tokenizer, "max_length"
+            )
 
         self.datasets = self.datasets.map(tokenize_)
 

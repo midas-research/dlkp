@@ -162,8 +162,9 @@ def run_extraction_model(model_args, data_args, training_args):
         num_labels=num_labels,
         cache_dir=model_args.cache_dir,
     )
-    config.use_CRF = model_args.use_CRF
-
+    config.use_crf = model_args.use_CRF
+    config.label_to_id = dataset.label_to_id
+    config.id_to_label = dataset.id_to_label
     # model
     model = (
         AutoCRFforTokenClassification
