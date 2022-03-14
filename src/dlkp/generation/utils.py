@@ -3,6 +3,7 @@ import os
 import sys
 from dataclasses import dataclass, field
 from typing import List, Optional, Tuple
+from transformers import TrainingArguments
 
 
 @dataclass
@@ -56,7 +57,7 @@ class KpGenModelArguments:
 
 
 @dataclass
-class KpGenDataTrainingArguments:
+class KpGenDataArguments:
     """
     Arguments pertaining to what data we are going to input our model for training and eval.
     """
@@ -229,3 +230,45 @@ class KpGenDataTrainingArguments:
                 ], "`test_file` should be a csv or a json file."
         if self.val_max_answer_length is None:
             self.val_max_answer_length = self.max_answer_length
+
+
+class KpGenTrainingArguments(TrainingArguments):
+    """
+    sortish_sampler (`bool`, *optional*, defaults to `False`):
+        Whether to use a *sortish sampler* or not. Only possible if the underlying datasets are *Seq2SeqDataset* for
+        now but will become generally available in the near future.
+        It sorts the inputs according to lengths in order to minimize the padding size, with a bit of randomness for
+        the training set.
+    predict_with_generate (`bool`, *optional*, defaults to `False`):
+        Whether to use generate to calculate generative metrics (ROUGE, BLEU).
+    generation_max_length (`int`, *optional*):
+        The `max_length` to use on each evaluation loop when `predict_with_generate=True`. Will default to the
+        `max_length` value of the model configuration.
+    generation_num_beams (`int`, *optional*):
+        The `num_beams` to use on each evaluation loop when `predict_with_generate=True`. Will default to the
+        `num_beams` value of the model configuration.
+    """
+
+    sortish_sampler: bool = field(
+        default=False, metadata={"help": "Whether to use SortishSampler or not."}
+    )
+    predict_with_generate: bool = field(
+        default=False,
+        metadata={
+            "help": "Whether to use generate to calculate generative metrics (ROUGE, BLEU)."
+        },
+    )
+    generation_max_length: Optional[int] = field(
+        default=None,
+        metadata={
+            "help": "The `max_length` to use on each evaluation loop when `predict_with_generate=True`. Will default "
+            "to the `max_length` value of the model configuration."
+        },
+    )
+    generation_num_beams: Optional[int] = field(
+        default=None,
+        metadata={
+            "help": "The `num_beams` to use on each evaluation loop when `predict_with_generate=True`. Will default "
+            "to the `num_beams` value of the model configuration."
+        },
+    )

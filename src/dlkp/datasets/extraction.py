@@ -1,7 +1,8 @@
 import os, sys
 from dataclasses import dataclass, field
+from tokenize import String
 from typing import Optional
-from datasets import ClassLabel, load_dataset
+from datasets import ClassLabel, load_dataset, Dataset
 from . import KpDatasets
 
 
@@ -10,10 +11,14 @@ class KpExtractionDatasets(KpDatasets):
         super().__init__()
         self.data_args = data_args_
         self.tokenizer = tokenizer_
-        self.text_column_name = self.data_args.text_column_name
-        self.label_column_name = self.data_args.label_column_name
-        self.datasets = None
+        self.text_column_name = (
+            self.data_args.text_column_name if self.data_args is not None else None
+        )
+        self.label_column_name = (
+            self.data_args.label_column_name if self.data_args is not None else None
+        )
         self.padding = "max_length" if self.data_args.pad_to_max_length else False
+        self.datasets = None
         self.set_labels()
         self.load_kp_datasets()
 
@@ -30,6 +35,10 @@ class KpExtractionDatasets(KpDatasets):
         self.label_to_id = {"B": 0, "I": 1, "O": 2}
         self.id_to_label = {0: "B", 1: "I", 2: "O"}
         self.num_labels = 3
+
+    @staticmethod
+    def load_kp_datasets_from_text(txt):
+        return Dataset.from_dict({"document": txt})
 
     def load_kp_datasets(self):
         if self.data_args.dataset_name is not None:
@@ -95,10 +104,11 @@ class KpExtractionDatasets(KpDatasets):
             return None
         return self.datasets["test"]
 
-    def tokenize_text(self, txt):
-        tokenized_text = self.tokenizer(
+    @staticmethod
+    def tokenize_text(txt, tokenizer, padding):
+        tokenized_text = tokenizer(
             txt,
-            padding=self.padding,
+            padding=padding,
             truncation=True,
             # We use this argument because the texts in our dataset are lists of words (with a label for each word).
             is_split_into_words=True,
@@ -107,7 +117,11 @@ class KpExtractionDatasets(KpDatasets):
         return tokenized_text
 
     def tokenize_and_align_labels_(self, examples):
-        tokenized_inputs = self.tokenize_text(examples[self.text_column_name])
+        tokenized_inputs = self.tokenize_text(
+            examples[self.text_column_name],
+            tokenizer=self.tokenizer,
+            padding=self.padding,
+        )
         labels = []
         if self.label_column_name is None:
             return tokenized_inputs
@@ -151,13 +165,13 @@ class KpExtractionDatasets(KpDatasets):
         ), "number of rows in original dataset and predicted labels are not same"
         self.predicted_labels = predicted_labels
         self.datasets[split_name] = self.datasets[split_name].map(
-            self.extract_kp_from_tags,
+            self.extract_kp_from_tags_,
             num_proc=self.data_args.preprocessing_num_workers,
             with_indices=True,
         )
         return self.datasets[split_name]["extracted_keyphrase"]
 
-    def extract_kp_from_tags(self, examples, idx):
+    def extract_kp_from_tags_(self, examples, idx):
         ids = examples["input_ids"]
         atn_mask = examples["special_tokens_mask"]
         tokens = self.tokenizer.convert_ids_to_tokens(ids, skip_special_tokens=True)
@@ -171,13 +185,25 @@ class KpExtractionDatasets(KpDatasets):
         ), "number of tags (={}) in prediction and tokens(={}) are not same for {}th".format(
             len(tags), len(tokens), idx
         )
-        all_kps = []
-        current_kp = []
-        prev_tag = None
         token_ids = self.tokenizer.convert_tokens_to_ids(
             tokens
         )  # needed so that we can use batch decode directly and not mess up with convert tokens to string algorithm
-        for id, token, tag in zip(token_ids, tokens, tags):
+        all_kps = self.extract_kp_from_tags(token_ids, tags)
+
+        extracted_kps = self.tokenizer.batch_decode(
+            all_kps,
+            skip_special_tokens=True,
+            clean_up_tokenization_spaces=True,
+        )
+        examples["extracted_keyphrase"] = extracted_kps
+
+        return examples
+
+    @staticmethod
+    def extract_kp_from_tags(token_ids, tags):
+        all_kps = []
+        current_kp = []
+        for id, tag in zip(token_ids, tags):
             if tag == "O" and len(current_kp) > 0:  # current kp ends
                 all_kps.append(current_kp)
                 current_kp = []
@@ -191,11 +217,4 @@ class KpExtractionDatasets(KpDatasets):
         if len(current_kp) > 0:  # check for the last KP in sequence
             all_kps.append(current_kp)
 
-        extracted_kps = self.tokenizer.batch_decode(
-            all_kps,
-            skip_special_tokens=True,
-            clean_up_tokenization_spaces=True,
-        )
-        examples["extracted_keyphrase"] = extracted_kps
-
-        return examples
+        return all_kps
