@@ -9,7 +9,7 @@ def compute_metrics(p):
     predictions, labels = p
     label_to_id = {"B": 0, "I": 1, "O": 2}
     id_to_label = ["B", "I", "O"]
-    # if model_args.use_CRF is False:
+    # if model_args.use_crf is False:
     predictions = np.argmax(predictions, axis=2)
     # print(predictions.shape, labels.shape)
 

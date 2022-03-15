@@ -1,15 +1,15 @@
-from transformers import (
-    Trainer,
-    set_seed,
-)
+from transformers import Trainer
 from transformers.trainer import *
 from transformers.trainer_utils import PredictionOutput
 from torch import nn
 from torch.utils.data.dataloader import DataLoader
 
-# from torch.utils.data.dataset import Dataset
-# from typing import Any, Callable, Dict, List, Optional, Tuple, Union
-class CrfTrainer(Trainer):
+
+class KpExtractionTrainer(Trainer):
+    pass
+
+
+class CrfKpExtractionTrainer(Trainer):
     def prediction_loop(
         self,
         dataloader: DataLoader,

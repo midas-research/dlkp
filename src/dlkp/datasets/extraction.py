@@ -105,7 +105,7 @@ class KpExtractionDatasets(KpDatasets):
         return self.datasets["test"]
 
     @staticmethod
-    def tokenize_text(txt, tokenizer, padding):
+    def tokenize_text(txt, tokenizer, padding=False):
         tokenized_text = tokenizer(
             txt,
             padding=padding,

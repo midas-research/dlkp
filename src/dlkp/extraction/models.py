@@ -1,21 +1,17 @@
 # all token classification model with crf head
 from transformers import (
-    AutoModelForPreTraining,
     AutoModel,
-    BertModel,
-    BertPreTrainedModel,
-    LongformerModel,
-    PreTrainedModel,
     AutoModelForTokenClassification,
-    # PretrainedModel,
 )
 from transformers.modeling_outputs import TokenClassifierOutput
-import collections
-from transformers.models.longformer.modeling_longformer import LongformerPreTrainedModel
 from .crf import ConditionalRandomField
 
 
-class AutoCRFforTokenClassification(AutoModelForTokenClassification):
+class AutoModelForKpExtraction(AutoModelForTokenClassification):
+    pass
+
+
+class AutoCrfModelforKpExtraction(AutoModelForTokenClassification):
     def __init__(self, config):
         super().__init__(config)
         self.num_labels = config.num_labels

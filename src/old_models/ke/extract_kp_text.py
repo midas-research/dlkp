@@ -4,7 +4,7 @@ from .kpe import run_extraction_model
 
 
 def extract_from_text(
-    text_list, model_name_or_path, use_CRF=False, output_dir="eval_output"
+    text_list, model_name_or_path, use_crf=False, output_dir="eval_output"
 ):
     # if output_dir is None:
     #     output_dir =
@@ -26,7 +26,7 @@ def extract_from_text(
         do_eval=False,
         do_predict=True,
     )
-    model_args = ModelArguments(model_name_or_path=model_name_or_path, use_CRF=use_CRF)
+    model_args = ModelArguments(model_name_or_path=model_name_or_path, use_crf=use_crf)
     data_args = DataTrainingArguments(
         test_file=test_file,
         pad_to_max_length=True,

@@ -1,17 +1,19 @@
 from typing import List, Union
 import transformers
-from transformers import (
-    AutoConfig,
-    AutoModelForTokenClassification,
-    AutoTokenizer,
-    DataCollatorForTokenClassification,
-    Trainer,
-)
+from transformers import AutoConfig, AutoTokenizer, HfArgumentParser
+import os
+import sys
 import numpy as np
-from .crf_models import AutoCRFforTokenClassification
+
+from .models import AutoCRFforTokenClassification
 from .trainer import CrfTrainer
 
 from ..datasets.extraction import KpExtractionDatasets
+from .utils import KpExtDataArguments, KpExtModelArguments, KpExtTrainingArguments
+from .trainer import KpExtractionTrainer, CrfKpExtractionTrainer
+from .models import AutoModelForKpExtraction, AutoCrfModelforKpExtraction
+from .data_collators import DataCollatorForKpExtraction
+from .train_eval_kp_tagger import train_eval_extraction_model
 
 
 class KeyphraseTagger:
@@ -19,7 +21,7 @@ class KeyphraseTagger:
         self, model_name_or_path
     ) -> None:  # TODO use this class in train and eval purpose as well
         self.config = AutoConfig.from_pretrained(model_name_or_path)
-        self.use_crf = self.config.use_CRF if self.config.use_CRF is not None else False
+        self.use_crf = self.config.use_crf if self.config.use_crf is not None else False
         self.id_to_label = {
             0: "B",
             1: "I",
@@ -31,20 +33,18 @@ class KeyphraseTagger:
             add_prefix_space=True,
         )
         model_type = (
-            AutoCRFforTokenClassification
-            if self.use_crf
-            else AutoModelForTokenClassification
+            AutoCrfModelforKpExtraction if self.use_crf else AutoModelForKpExtraction
         )
 
         self.model = model_type.from_pretrained(
             model_name_or_path,
             config=self.config,
         )
-        self.data_collator = DataCollatorForTokenClassification(self.tokenizer)
+        self.data_collator = DataCollatorForKpExtraction(self.tokenizer)
 
-        self.trainer = (CrfTrainer if self.use_crf else Trainer)(
-            model=self.model, tokenizer=self.tokenizer, data_collator=self.data_collator
-        )
+        self.trainer = (
+            CrfKpExtractionTrainer if self.use_crf else KpExtractionTrainer
+        )(model=self.model, tokenizer=self.tokenizer, data_collator=self.data_collator)
 
     @classmethod
     def load(cls, model_name_or_path):
@@ -96,3 +96,28 @@ class KeyphraseTagger:
         self.datasets = self.datasets.map(extract_kp_from_tags_, with_indices=True)
 
         return self.datasets["extracted_keyphrase"]
+
+    @staticmethod
+    def train_and_eval(model_args, data_args, training_args):
+        return train_eval_extraction_model(
+            model_args=model_args, data_args=data_args, training_args=training_args
+        )
+
+    @staticmethod
+    def train_and_eval_cli():
+        parser = HfArgumentParser(
+            (KpExtModelArguments, KpExtDataArguments, KpExtTrainingArguments)
+        )
+
+        if len(sys.argv) == 2 and sys.argv[1].endswith(".json"):
+            # If we pass only one argument to the script and it's the path to a json file,
+            # let's parse it to get our arguments.
+            model_args, data_args, training_args = parser.parse_json_file(
+                json_file=os.path.abspath(sys.argv[1])
+            )
+        else:
+            model_args, data_args, training_args = parser.parse_args_into_dataclasses()
+
+        return train_eval_extraction_model(
+            model_args=model_args, data_args=data_args, training_args=training_args
+        )

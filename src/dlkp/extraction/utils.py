@@ -7,6 +7,11 @@ from transformers import TrainingArguments
 
 
 @dataclass
+class KpExtTrainingArguments(TrainingArguments):
+    pass
+
+
+@dataclass
 class KpExtModelArguments:
     """
     Arguments pertaining to which model/config/tokenizer we are going to fine-tune from.
@@ -41,11 +46,11 @@ class KpExtModelArguments:
             "help": "The specific model version to use (can be a branch name, tag name or commit id)."
         },
     )
-    use_CRF: bool = field(
+    use_crf: bool = field(
         default=False,
         metadata={"help": "wether to use CRF on top of the classifier"},
     )
-    use_BiLSTM: bool = field(  # not necessary
+    use_bilstm: bool = field(  # not necessary
         default=False,
         metadata={"help": "use BiLSTM in sequence classification"},
     )
