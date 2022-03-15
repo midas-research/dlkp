@@ -47,7 +47,7 @@ class ModelArguments:
             "help": "The specific model version to use (can be a branch name, tag name or commit id)."
         },
     )
-    use_CRF: bool = field(
+    use_crf: bool = field(
         default=False,
         metadata={"help": "wether to use CRF on top of the classifier"},
     )

@@ -55,8 +55,8 @@ from .transformer.token_classification_models import (
 from .crf.crf_trainer import CRF_Trainer
 
 # from extraction_utils import ModelArguments, DataTrainingArguments
-from ...kp_metrics.metrics import compute_metrics
-from ...kp_dataset.datasets import KpExtractionDatasets
+from ...metrics.metrics import compute_metrics
+from ...datasets.extraction import KpExtractionDatasets
 
 logger = logging.getLogger(__name__)
 
@@ -162,12 +162,13 @@ def run_extraction_model(model_args, data_args, training_args):
         num_labels=num_labels,
         cache_dir=model_args.cache_dir,
     )
-    config.use_CRF = model_args.use_CRF
-
+    config.use_crf = model_args.use_crf
+    config.label_to_id = dataset.label_to_id
+    config.id_to_label = dataset.id_to_label
     # model
     model = (
         AutoCRFforTokenClassification
-        if model_args.use_CRF
+        if model_args.use_crf
         else AutoModelForTokenClassification
     )
     model = model.from_pretrained(
@@ -182,7 +183,7 @@ def run_extraction_model(model_args, data_args, training_args):
     )
 
     # Initialize our Trainer
-    trainer = TRAINER_DICT["crf" if model_args.use_CRF else "token"](
+    trainer = TRAINER_DICT["crf" if model_args.use_crf else "token"](
         model=model,
         args=training_args,
         train_dataset=train_dataset if training_args.do_train else None,
@@ -237,7 +238,7 @@ def run_extraction_model(model_args, data_args, training_args):
 
         assert test_dataset is not None, "test data is none"
         predictions, labels, metrics = trainer.predict(test_dataset)
-        # if model_args.use_CRF is False:
+        # if model_args.use_crf is False:
         predictions = np.argmax(predictions, axis=2)
 
         # Remove ignored index (special tokens)
