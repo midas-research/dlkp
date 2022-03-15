@@ -7,7 +7,7 @@ from transformers import TrainingArguments
 
 
 @dataclass
-class ModelArguments:
+class KpExtModelArguments:
     """
     Arguments pertaining to which model/config/tokenizer we are going to fine-tune from.
     """
@@ -16,12 +16,6 @@ class ModelArguments:
         metadata={
             "help": "Path to pretrained model or model identifier from huggingface.co/models"
         }
-    )
-    model_family_name: str = field(
-        default="auto",
-        metadata={
-            "help": "name of the family of model, bert, longformer, reformer etc."
-        },
     )
     config_name: Optional[str] = field(
         default=None,
@@ -58,15 +52,21 @@ class ModelArguments:
 
 
 @dataclass
-class DataTrainingArguments:
+class KpExtDataArguments:
     """
     Arguments pertaining to what data we are going to input our model for training and eval.
     """
 
-    task_name: Optional[str] = field(
-        default="token", metadata={"help": "The name of the task token, crf"}
+    dataset_name: Optional[str] = field(
+        default=None,
+        metadata={"help": "The name of the dataset to use (via the datasets library)."},
     )
-
+    dataset_config_name: Optional[str] = field(
+        default="extraction",
+        metadata={
+            "help": "The configuration name of the dataset to use (via the datasets library)."
+        },
+    )
     train_file: Optional[str] = field(
         default=None,
         metadata={"help": "The input training data file (a csv or JSON file)."},
@@ -138,16 +138,7 @@ class DataTrainingArguments:
             "help": "Whether to return all the entity levels during evaluation or just the overall ones."
         },
     )
-    dataset_name: Optional[str] = field(
-        default=None,
-        metadata={"help": "The name of the dataset to use (via the datasets library)."},
-    )
-    dataset_config_name: Optional[str] = field(
-        default="extraction",
-        metadata={
-            "help": "The configuration name of the dataset to use (via the datasets library)."
-        },
-    )
+
     cache_file_name: Optional[str] = field(
         default=None,
         metadata={
@@ -189,47 +180,3 @@ class DataTrainingArguments:
             self.train_data_percent + self.test_data_percent + self.valid_data_percent
             == 100
         )
-
-
-def tokenize_and_align_labels(
-    examples, tokenizer, text_column_name, padding, label_column_name=None
-):
-    tokenized_inputs = tokenizer(
-        examples[text_column_name],
-        padding=padding,
-        truncation=True,
-        # We use this argument because the texts in our dataset are lists of words (with a label for each word).
-        is_split_into_words=True,
-    )
-    labels = []
-    for i, label in enumerate(examples[label_column_name]):
-        word_ids = tokenized_inputs.word_ids(batch_index=i)
-        previous_word_idx = None
-        label_ids = []
-        for word_idx in word_ids:
-            # Special tokens have a word id that is None. We set the label to -100 so they are automatically
-            # ignored in the loss function.
-            if word_idx is None:
-                label_ids.append(-100)
-                # label_ids.append(2)  # to avoid error change -100 to 'O' tag i.e. 2 class
-            # We set the label for the first token of each word.
-            elif word_idx != previous_word_idx:
-                label_ids.append(label_to_id[label[word_idx]])
-            # For the other tokens in a word, we set the label to either the current label or -100, depending on
-            # the label_all_tokens flag.
-            else:
-                label_ids.append(
-                    label_to_id[label[word_idx]] if data_args.label_all_tokens else -100
-                )
-                # to avoid error change -100 to 'O' tag i.e. 2 class
-                # label_ids.append(label_to_id[label[word_idx]] if data_args.label_all_tokens else 2)
-            previous_word_idx = word_idx
-
-        labels.append(label_ids)
-    if data_args.task_name == "guided":
-        tokenized_inputs["guide_embed"] = examples["guide_embed"]
-    tokenized_inputs["labels"] = labels
-    # tokenized_inputs['paper_id']= examples['paper_id']
-    # tokenized_inputs['extractive_keyphrases']= examples['extractive_keyphrases']
-
-    return tokenized_inputs

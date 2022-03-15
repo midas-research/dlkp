@@ -5,16 +5,11 @@ from transformers import (
     AutoModelForTokenClassification,
     AutoTokenizer,
     DataCollatorForTokenClassification,
-    HfArgumentParser,
-    PreTrainedTokenizerFast,
     Trainer,
-    TrainingArguments,
-    set_seed,
-    BertForTokenClassification,
 )
 import numpy as np
 from .crf_models import AutoCRFforTokenClassification
-from .crf_trainer import CRF_Trainer
+from .trainer import CrfTrainer
 
 from ..datasets.extraction import KpExtractionDatasets
 
@@ -47,7 +42,7 @@ class KeyphraseTagger:
         )
         self.data_collator = DataCollatorForTokenClassification(self.tokenizer)
 
-        self.trainer = (CRF_Trainer if self.use_crf else Trainer)(
+        self.trainer = (CrfTrainer if self.use_crf else Trainer)(
             model=self.model, tokenizer=self.tokenizer, data_collator=self.data_collator
         )
 

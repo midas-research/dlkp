@@ -9,7 +9,7 @@ from torch.utils.data.dataloader import DataLoader
 
 # from torch.utils.data.dataset import Dataset
 # from typing import Any, Callable, Dict, List, Optional, Tuple, Union
-class CRF_Trainer(Trainer):
+class CrfTrainer(Trainer):
     def prediction_loop(
         self,
         dataloader: DataLoader,
