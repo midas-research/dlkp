@@ -180,7 +180,7 @@ class KpExtDataArguments:
                     "csv",
                     "json",
                 ], "`test_file` should be a csv or a json file."
-        self.task_name = self.task_name.lower()
+
         assert (
             self.train_data_percent + self.test_data_percent + self.valid_data_percent
             == 100

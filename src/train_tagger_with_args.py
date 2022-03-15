@@ -7,16 +7,16 @@ from dlkp.extraction import (
 
 
 training_args = KpExtTrainingArguments(
-    output_dir="/media/nas_mount/Debanjan/amardeep/dlkp_out/inpec_debug_eval",  # todo
+    output_dir="/media/nas_mount/Debanjan/amardeep/dlkp_out/inpec_tagger_roberta",  # todo
     learning_rate=3e-5,
     overwrite_output_dir=True,
     num_train_epochs=2,
     per_device_train_batch_size=4,
     per_device_eval_batch_size=4,
     # gradient_accumulation_steps=4,
-    do_train=False,
-    do_eval=False,
-    do_predict=True,
+    do_train=True,
+    do_eval=True,
+    do_predict=False,
     evaluation_strategy="steps",
     save_steps=1000,
     eval_steps=100,
@@ -26,7 +26,7 @@ training_args = KpExtTrainingArguments(
     # weight_decay =0.001
 )
 model_args = KpExtModelArguments(
-    model_name_or_path="/media/nas_mount/Debanjan/amardeep/dlkp_out/inpec_debug",
+    model_name_or_path="bert-base-uncased",
     use_crf=False,
 )
 data_args = KpExtDataArguments(
@@ -38,10 +38,10 @@ data_args = KpExtDataArguments(
     overwrite_cache=True,
     label_all_tokens=True,
     preprocessing_num_workers=8,
-    # return_entity_level_metrics=True,
+    return_entity_level_metrics=True,
 )
 KeyphraseTagger.train_and_eval(
     model_args=model_args, data_args=data_args, training_args=training_args
 )
 
-# CUDA_VISIBLE_DEVICES=0 python run_auto_ke.py
+# CUDA_VISIBLE_DEVICES=1 python train_tagger_with_args.py

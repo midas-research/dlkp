@@ -173,11 +173,11 @@ class KpExtractionDatasets(KpDatasets):
 
     def extract_kp_from_tags_(self, examples, idx):
         ids = examples["input_ids"]
-        atn_mask = examples["special_tokens_mask"]
+        special_tok_mask = examples["special_tokens_mask"]
         tokens = self.tokenizer.convert_ids_to_tokens(ids, skip_special_tokens=True)
         tags = [
             self.id_to_label[p]
-            for (p, m) in zip(self.predicted_labels[idx], atn_mask)
+            for (p, m) in zip(self.predicted_labels[idx], special_tok_mask)
             if m == 0
         ]
         assert len(tokens) == len(

@@ -5,9 +5,6 @@ import os
 import sys
 import numpy as np
 
-from .models import AutoCRFforTokenClassification
-from .trainer import CrfTrainer
-
 from ..datasets.extraction import KpExtractionDatasets
 from .utils import KpExtDataArguments, KpExtModelArguments, KpExtTrainingArguments
 from .trainer import KpExtractionTrainer, CrfKpExtractionTrainer
@@ -22,11 +19,7 @@ class KeyphraseTagger:
     ) -> None:  # TODO use this class in train and eval purpose as well
         self.config = AutoConfig.from_pretrained(model_name_or_path)
         self.use_crf = self.config.use_crf if self.config.use_crf is not None else False
-        self.id_to_label = {
-            0: "B",
-            1: "I",
-            2: "O",
-        }  # TODO take this from config file in future
+        self.id_to_label = self.config.id_to_label
         self.tokenizer = AutoTokenizer.from_pretrained(
             model_name_or_path,
             use_fast=True,
@@ -67,13 +60,13 @@ class KeyphraseTagger:
 
         def extract_kp_from_tags_(examples, idx):
             ids = examples["input_ids"]
-            atn_mask = examples["special_tokens_mask"]
+            special_tok_mask = examples["special_tokens_mask"]
             tokens = self.tokenizer.convert_ids_to_tokens(ids, skip_special_tokens=True)
             tags = [
-                self.id_to_label[p]
-                for (p, m) in zip(predictions[idx], atn_mask)
+                self.id_to_label[str(p)]
+                for (p, m) in zip(predictions[idx], special_tok_mask)
                 if m == 0
-            ]
+            ]  # TODO remove str(p)
             assert len(tokens) == len(
                 tags
             ), "number of tags (={}) in prediction and tokens(={}) are not same for {}th".format(
