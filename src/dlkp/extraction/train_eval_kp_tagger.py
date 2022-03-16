@@ -36,7 +36,7 @@ from transformers.trainer_utils import get_last_checkpoint, is_main_process
 
 from .trainer import KpExtractionTrainer, CrfKpExtractionTrainer
 from .models import AutoModelForKpExtraction, AutoCrfModelforKpExtraction
-from .utils import KpExtDataArguments, KpExtModelArguments, KpExtTrainingArguments
+from .utils import KEDataArguments, KEModelArguments, KETrainingArguments
 from .data_collators import DataCollatorForKpExtraction
 from ..metrics.metrics import compute_metrics
 from ..datasets.extraction import KpExtractionDatasets

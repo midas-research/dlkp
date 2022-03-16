@@ -6,7 +6,7 @@ import sys
 import numpy as np
 
 from ..datasets.extraction import KpExtractionDatasets
-from .utils import KpExtDataArguments, KpExtModelArguments, KpExtTrainingArguments
+from .utils import KEDataArguments, KEModelArguments, KETrainingArguments
 from .trainer import KpExtractionTrainer, CrfKpExtractionTrainer
 from .models import AutoModelForKpExtraction, AutoCrfModelforKpExtraction
 from .data_collators import DataCollatorForKpExtraction
@@ -99,7 +99,7 @@ class KeyphraseTagger:
     @staticmethod
     def train_and_eval_cli():
         parser = HfArgumentParser(
-            (KpExtModelArguments, KpExtDataArguments, KpExtTrainingArguments)
+            (KEModelArguments, KEDataArguments, KETrainingArguments)
         )
 
         if len(sys.argv) == 2 and sys.argv[1].endswith(".json"):
