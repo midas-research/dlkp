@@ -152,9 +152,6 @@ class KEDatasets(KpDatasets):
 
         return tokenized_inputs
 
-    def get_predicted_labels(self, predictions):
-        self.datasets = "g"
-
     def get_extracted_keyphrases(self, predicted_labels, split_name="test"):
         assert self.datasets[split_name].num_rows == len(
             predicted_labels
