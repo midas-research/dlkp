@@ -1,12 +1,8 @@
-import os, sys
-from dataclasses import dataclass, field
-from tokenize import String
-from typing import Optional
-from datasets import ClassLabel, load_dataset, Dataset
+from datasets import load_dataset, Dataset
 from . import KpDatasets
 
 
-class KpExtractionDatasets(KpDatasets):
+class KEDatasets(KpDatasets):
     def __init__(self, data_args_, tokenizer_) -> None:
         super().__init__()
         self.data_args = data_args_
