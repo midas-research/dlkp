@@ -5,8 +5,8 @@ import os
 import sys
 import numpy as np
 
-from ..datasets.extraction import KpExtractionDatasets
-from .utils import KpExtDataArguments, KpExtModelArguments, KpExtTrainingArguments
+from ..datasets.extraction import KEDatasets
+from .utils import KEDataArguments, KEModelArguments, KETrainingArguments
 from .trainer import KpExtractionTrainer, CrfKpExtractionTrainer
 from .models import AutoModelForKpExtraction, AutoCrfModelforKpExtraction
 from .data_collators import DataCollatorForKpExtraction
@@ -46,10 +46,10 @@ class KeyphraseTagger:
     def predict(self, texts: Union[List, str]):
         if isinstance(texts, str):
             texts = [texts]
-        self.datasets = KpExtractionDatasets.load_kp_datasets_from_text(texts)
+        self.datasets = KEDatasets.load_kp_datasets_from_text(texts)
         # tokenize current datsets
         def tokenize_(txt):
-            return KpExtractionDatasets.tokenize_text(
+            return KEDatasets.tokenize_text(
                 txt["document"].split(), self.tokenizer, "max_length"
             )
 
@@ -75,7 +75,7 @@ class KeyphraseTagger:
             token_ids = self.tokenizer.convert_tokens_to_ids(
                 tokens
             )  # needed so that we can use batch decode directly and not mess up with convert tokens to string algorithm
-            all_kps = KpExtractionDatasets.extract_kp_from_tags(token_ids, tags)
+            all_kps = KEDatasets.extract_kp_from_tags(token_ids, tags)
 
             extracted_kps = self.tokenizer.batch_decode(
                 all_kps,
@@ -99,7 +99,7 @@ class KeyphraseTagger:
     @staticmethod
     def train_and_eval_cli():
         parser = HfArgumentParser(
-            (KpExtModelArguments, KpExtDataArguments, KpExtTrainingArguments)
+            (KEModelArguments, KEDataArguments, KETrainingArguments)
         )
 
         if len(sys.argv) == 2 and sys.argv[1].endswith(".json"):

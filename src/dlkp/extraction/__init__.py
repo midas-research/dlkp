@@ -1,4 +1,4 @@
-from .utils import KpExtDataArguments, KpExtModelArguments, KpExtTrainingArguments
+from .utils import KEDataArguments, KEModelArguments, KETrainingArguments
 
 from .trainer import KpExtractionTrainer, CrfKpExtractionTrainer
 

@@ -36,10 +36,10 @@ from transformers.trainer_utils import get_last_checkpoint, is_main_process
 
 from .trainer import KpExtractionTrainer, CrfKpExtractionTrainer
 from .models import AutoModelForKpExtraction, AutoCrfModelforKpExtraction
-from .utils import KpExtDataArguments, KpExtModelArguments, KpExtTrainingArguments
+from .utils import KEDataArguments, KEModelArguments, KETrainingArguments
 from .data_collators import DataCollatorForKpExtraction
 from ..metrics.metrics import compute_metrics
-from ..datasets.extraction import KpExtractionDatasets
+from ..datasets.extraction import KEDatasets
 
 logger = logging.getLogger(__name__)
 
@@ -104,7 +104,7 @@ def train_eval_extraction_model(model_args, data_args, training_args):
 
     # load keyphrase data
     logging.info("loading kp dataset")
-    dataset = KpExtractionDatasets(data_args, tokenizer)
+    dataset = KEDatasets(data_args, tokenizer)
 
     num_labels = dataset.num_labels
     logging.info("tokenize and align laebls")

@@ -1,20 +1,17 @@
-import logging
-import os
-import sys
 from dataclasses import dataclass, field
 from typing import Optional
 from transformers import TrainingArguments
 
 
 @dataclass
-class KpExtTrainingArguments(TrainingArguments):
+class KETrainingArguments(TrainingArguments):
     pass
 
 
 @dataclass
-class KpExtModelArguments:
+class KEModelArguments:
     """
-    Arguments pertaining to which model/config/tokenizer we are going to fine-tune from.
+    Arguments for model/config/tokenizer used for fine-tuning a keyphrase extraction model.
     """
 
     model_name_or_path: str = field(
@@ -37,7 +34,7 @@ class KpExtModelArguments:
     cache_dir: Optional[str] = field(
         default=None,
         metadata={
-            "help": "Where do you want to store the pretrained models downloaded from huggingface.co"
+            "help": "Cache directory for storing the pretrained models downloaded from huggingface.co"
         },
     )
     model_revision: str = field(
@@ -48,18 +45,18 @@ class KpExtModelArguments:
     )
     use_crf: bool = field(
         default=False,
-        metadata={"help": "wether to use CRF on top of the classifier"},
+        metadata={"help": "whether to use CRF head"},
     )
     use_bilstm: bool = field(  # not necessary
         default=False,
-        metadata={"help": "use BiLSTM in sequence classification"},
+        metadata={"help": "use Bidirectional LSTM while fine-tuning"},
     )
 
 
 @dataclass
-class KpExtDataArguments:
+class KEDataArguments:
     """
-    Arguments pertaining to what data we are going to input our model for training and eval.
+    Arguments for training and evaluation data
     """
 
     dataset_name: Optional[str] = field(
@@ -103,15 +100,15 @@ class KpExtDataArguments:
     )
     train_data_percent: Optional[int] = field(
         default=100,
-        metadata={"help": "percentage of train file to be used for training purpose"},
+        metadata={"help": "percentage of training data to be used for training"},
     )
     valid_data_percent: Optional[int] = field(
         default=0,
-        metadata={"help": "percentage of train file to be used for validation purpose"},
+        metadata={"help": "percentage of training data to be used for validation purpose"},
     )
     test_data_percent: Optional[int] = field(
         default=0,
-        metadata={"help": "percentage of train file to be used for testing purpose"},
+        metadata={"help": "percentage of training data to be used for testing purpose"},
     )
 
     overwrite_cache: bool = field(
