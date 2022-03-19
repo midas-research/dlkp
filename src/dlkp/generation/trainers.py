@@ -17,7 +17,7 @@ import logging
 logger = logging.get_logger(__name__)
 
 
-class KpGenTrainer(Trainer):
+class KpGenerationTrainer(Trainer):
     def evaluate(
         self,
         eval_dataset: Optional[Dataset] = None,
