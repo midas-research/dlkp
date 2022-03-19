@@ -26,7 +26,7 @@ from transformers.trainer_utils import (
 from transformers.utils import check_min_version
 from transformers.utils.versions import require_version
 
-from .utils import KpGenDataArguments, KpGenModelArguments, KpGenTrainingArguments
+from .utils import KGDataArguments, KGModelArguments, KGTrainingArguments
 
 check_min_version("4.17.0")
 
