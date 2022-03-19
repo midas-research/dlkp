@@ -20,7 +20,7 @@ class KpGenerationDatasets(KpDatasets):
     def load_kp_datasets(self):
         if self.data_args.dataset_name is not None:
             # Downloading and loading a dataset from the hub.
-            raw_datasets = load_dataset(
+            self.datasets = load_dataset(
                 self.data_args.dataset_name,
                 self.data_args.dataset_config_name,
             )
@@ -36,8 +36,22 @@ class KpGenerationDatasets(KpDatasets):
             if self.data_args.test_file is not None:
                 data_files["test"] = self.data_args.test_file
                 extension = self.data_args.test_file.split(".")[-1]
-            raw_datasets = load_dataset(
+            self.datasets = load_dataset(
                 extension,
                 data_files=data_files,
                 field="data",
+            )
+
+        if "train" in self.datasets:
+            column_names = self.datasets["train"].column_names
+            features = self.datasets["train"].features
+        elif "validation" in self.datasets:
+            column_names = self.datasets["validation"].column_names
+            features = self.datasets["validation"].features
+        elif "test" in self.datasets:
+            column_names = self.datasets["test"].column_names
+            features = self.datasets["test"].features
+        else:
+            raise AssertionError(
+                "neither train, validation nor test dataset is availabel"
             )
