@@ -1,8 +1,10 @@
-import os, sys
+import os, sys, logging
 from dataclasses import dataclass, field
 from typing import Optional
 from datasets import ClassLabel, load_dataset
 from . import KpDatasets
+
+logger = logging.getLogger(__name__)
 
 
 class KpGenerationDatasets(KpDatasets):
@@ -12,7 +14,14 @@ class KpGenerationDatasets(KpDatasets):
         self.tokenizer = tokenizer_
         self.text_column_name = self.data_args.text_column_name
         self.keyphrases_column_name = self.data_args.keyphrases_column_name
-        self.max_seq_length = self.data_args.max_seq_length
+        if self.data_args.max_seq_length > self.tokenizer.model_max_length:
+            logger.warning(
+                f"The max_seq_length passed ({self.data_args.max_seq_length}) is larger than the maximum length for the"
+                f"model ({self.tokenizer.model_max_length}). Using max_seq_length={self.tokenizer.model_max_length}."
+            )
+        self.max_seq_length = min(
+            self.data_args.max_seq_length, self.tokenizer.model_max_length
+        )
         self.max_keyphrases_length = self.data_args.max_keyphrases_length
         self.padding = "max_length" if self.data_args.pad_to_max_length else False
         self.datasets = None
