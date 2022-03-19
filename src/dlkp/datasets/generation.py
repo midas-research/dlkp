@@ -64,3 +64,20 @@ class KpGenerationDatasets(KpDatasets):
             raise AssertionError(
                 "neither train, validation nor test dataset is availabel"
             )
+
+        if self.text_column_name is None:
+            self.text_column_name = (
+                "document" if "document" in column_names else column_names[1]
+            )  # either document or 2nd column as text i/p
+
+        assert self.text_column_name in column_names
+
+        if self.keyphrases_column_name is None:
+            self.keyphrases_column_name = (
+                "keyphrases" if "keyphrases" in column_names else None
+            )
+            if len(column_names) > 2:
+                self.keyphrases_column_name = column_names[2]
+
+        if self.keyphrases_column_name is not None:
+            assert self.keyphrases_column_name in column_names

@@ -73,13 +73,13 @@ class KGDataArguments:
         },
     )
     text_column_name: Optional[str] = field(
-        default="documents",
+        default=None,
         metadata={
             "help": "The name of the column in the datasets containing the text (for keyphrase extraction)."
         },
     )
     keyphrases_column_name: Optional[str] = field(
-        default="keyphrases",
+        default=None,
         metadata={
             "help": "The name of the column in the datasets containing the keyphrases (for keyphrase extraction)."
         },
