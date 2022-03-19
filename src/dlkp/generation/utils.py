@@ -7,7 +7,7 @@ from transformers import TrainingArguments
 
 
 @dataclass
-class KpGenModelArguments:
+class KGModelArguments:
     """
     Arguments pertaining to which model/config/tokenizer we are going to fine-tune from.
     """
@@ -57,7 +57,7 @@ class KpGenModelArguments:
 
 
 @dataclass
-class KpGenDataArguments:
+class KGDataArguments:
     """
     Arguments pertaining to what data we are going to input our model for training and eval.
     """
@@ -232,7 +232,7 @@ class KpGenDataArguments:
             self.val_max_answer_length = self.max_answer_length
 
 
-class KpGenTrainingArguments(TrainingArguments):
+class KGTrainingArguments(TrainingArguments):
     """
     sortish_sampler (`bool`, *optional*, defaults to `False`):
         Whether to use a *sortish sampler* or not. Only possible if the underlying datasets are *Seq2SeqDataset* for
