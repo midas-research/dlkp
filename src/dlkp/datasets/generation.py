@@ -25,6 +25,8 @@ class KpGenerationDatasets(KpDatasets):
         self.max_keyphrases_length = self.data_args.max_keyphrases_length
         self.padding = "max_length" if self.data_args.pad_to_max_length else False
         self.datasets = None
+        self.truncation = True
+        self.kp_sep_token = self.data_args.keyphrase_sep_token
 
     def load_kp_datasets(self):
         if self.data_args.dataset_name is not None:
@@ -81,3 +83,45 @@ class KpGenerationDatasets(KpDatasets):
 
         if self.keyphrases_column_name is not None:
             assert self.keyphrases_column_name in column_names
+
+    @staticmethod
+    def prepare_text_input(text):
+        return " ".join(text)
+
+    @staticmethod
+    def prepare_one2many_target(keyphrase_list, sep_token):
+        sep_token = " " + sep_token + " "
+        return sep_token.join(keyphrase_list)
+
+    def tokenize_input_and_text(self, input_text, target_text):
+        inputs = self.tokenizer(
+            input_text,
+            max_length=self.max_seq_length,
+            padding=self.padding,
+            truncation=self.truncation,
+        )
+
+        with self.tokenizer.as_target_tokenizer():
+            targets = self.tokenizer(
+                target_text,
+                max_len=self.max_keyphrases_length,
+                padding=self.padding,
+                truncation=self.truncation,
+            )
+
+        if self.padding and self.data_args.ignore_pad_token_for_loss:
+            targets["input_ids"] = [
+                [(t if t != self.tokenizer.pad_token_id else -100) for t in target]
+                for target in targets["input_ids"]
+            ]
+
+        inputs["labels"] = targets["input_ids"]
+
+        return inputs
+
+    def preapre_inputs_and_target_(self, examples):
+        input_text = self.prepare_text_input(examples[self.text_column_name])
+
+        target_text = self.prepare_one2many_target(
+            examples[self.keyphrases_column_name], self.kp_sep_token
+        )

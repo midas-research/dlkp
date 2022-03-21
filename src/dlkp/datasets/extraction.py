@@ -106,6 +106,7 @@ class KEDatasets(KpDatasets):
             txt,
             padding=padding,
             truncation=True,
+            # TODO incoporate max seq len argument
             # We use this argument because the texts in our dataset are lists of words (with a label for each word).
             is_split_into_words=True,
             return_special_tokens_mask=True,
