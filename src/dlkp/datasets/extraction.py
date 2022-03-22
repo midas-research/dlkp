@@ -86,6 +86,7 @@ class KEDatasets(KpDatasets):
             assert self.label_column_name in column_names
 
     def get_train_dataset(self):
+        # TODO tokenize and allign data from here
         if "train" not in self.datasets:
             return None
         return self.datasets["train"]

@@ -67,6 +67,8 @@ class KpGenerationDatasets(KpDatasets):
                 "neither train, validation nor test dataset is availabel"
             )
 
+        self.columns = column_names
+
         if self.text_column_name is None:
             self.text_column_name = (
                 "document" if "document" in column_names else column_names[1]
@@ -93,7 +95,14 @@ class KpGenerationDatasets(KpDatasets):
         sep_token = " " + sep_token + " "
         return sep_token.join(keyphrase_list)
 
-    def tokenize_input_and_text(self, input_text, target_text):
+    def preapre_inputs_and_target(self, examples):
+        # TODO give option to preapare based on one2one option
+        input_text = self.prepare_text_input(examples[self.text_column_name])
+
+        target_text = self.prepare_one2many_target(
+            examples[self.keyphrases_column_name], self.kp_sep_token
+        )
+
         inputs = self.tokenizer(
             input_text,
             max_length=self.max_seq_length,
@@ -119,9 +128,40 @@ class KpGenerationDatasets(KpDatasets):
 
         return inputs
 
-    def preapre_inputs_and_target_(self, examples):
-        input_text = self.prepare_text_input(examples[self.text_column_name])
+    def get_train_inputs(self):
+        if "train" not in self.datasets:
+            return None
+        if self.data_args.max_train_samples is not None:
+            self.datasets["train"] = self.datasets["train"].select(
+                range(self.data_args.max_train_samples)
+            )
+        return self.prepare_split_inputs("train")
 
-        target_text = self.prepare_one2many_target(
-            examples[self.keyphrases_column_name], self.kp_sep_token
+    def get_eval_inputs(self):
+        if "validation" not in self.datasets:
+            return None
+        if self.data_args.max_eval_samples is not None:
+            self.datasets["validation"] = self.datasets["validation"].select(
+                range(self.data_args.max_eval_samples)
+            )
+        return self.prepare_split_inputs("validation")
+
+    def get_test_inputs(self):
+        if "test" not in self.datasets:
+            return None
+        if self.data_args.max_test_samples is not None:
+            self.datasets["test"] = self.datasets["test"].select(
+                range(self.data_args.max_test_samples)
+            )
+        return self.prepare_split_inputs("test")
+
+    def prepare_split_inputs(self, split_name):
+        # TODO test remove other columns feature
+        self.datasets[split_name] = self.datasets[split_name].map(
+            self.preapre_inputs_and_target,
+            batched=True,
+            # remove_columns=self.columns,
+            num_proc=self.data_args.preprocessing_num_workers,
         )
+
+        return self.datasets[split_name]
