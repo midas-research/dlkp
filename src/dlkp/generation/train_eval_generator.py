@@ -36,7 +36,7 @@ require_version(
 logger = logging.getLogger(__name__)
 
 
-def train_eval_tagger(model_args, data_args, training_args):
+def train_eval_generator(model_args, data_args, training_args):
     # See all possible arguments in src/transformers/training_args.py
     # or by passing the --help flag to this script.
     # We now keep distinct sets of args, for a cleaner separation of concerns.
@@ -123,8 +123,8 @@ def train_eval_tagger(model_args, data_args, training_args):
     # datasets
     raw_datasets = KpGenerationDatasets(data_args, tokenizer)
     train_dataset = raw_datasets.get_train_inputs()
-    eval_dataset = raw_datasets.get_eval_dataset()
-    test_dataset = raw_datasets.get_test_dataset()
+    eval_dataset = raw_datasets.get_eval_inputs()
+    test_dataset = raw_datasets.get_test_inputs()
 
     # Model
     model = AutoSeq2SeqModelForKpGeneration.from_pretrained(
@@ -158,6 +158,7 @@ def train_eval_tagger(model_args, data_args, training_args):
     metric = load_metric("sacrebleu")
 
     def compute_metrics(p: EvalPrediction):
+        print("prid compute met", type(p.predictions[0]), p.predictions[0].shape)
         return metric.compute(predictions=p.predictions, references=p.label_ids)
 
     # Post-processing:
@@ -231,25 +232,33 @@ def train_eval_tagger(model_args, data_args, training_args):
     max_length = (
         training_args.generation_max_length
         if training_args.generation_max_length is not None
-        else data_args.val_max_answer_length
+        else data_args.val_max_keyphrases_length
     )
     num_beams = (
         data_args.num_beams
         if data_args.num_beams is not None
         else training_args.generation_num_beams
     )
-    if training_args.do_eval:
-        logger.info("*** Evaluate ***")
-        metrics = trainer.evaluate(
-            max_length=max_length, num_beams=num_beams, metric_key_prefix="eval"
-        )
-        trainer.log_metrics("eval", metrics)
-        trainer.save_metrics("eval", metrics)
+    # if training_args.do_eval:
+    #     logger.info("*** Evaluate ***")
+    #     metrics = trainer.evaluate(
+    #         max_length=max_length, num_beams=num_beams, metric_key_prefix="eval"
+    #     )
+    #     trainer.log_metrics("eval", metrics)
+    #     trainer.save_metrics("eval", metrics)
 
     # Prediction
     if training_args.do_predict:
         logger.info("*** Predict ***")
         results = trainer.predict(test_dataset)
         metrics = results.metrics
-        trainer.log_metrics("predict", metrics)
+        pre = results.predictions
+        decod = tokenizer.batch_decode(
+            pre,
+            skip_special_tokens=True,
+            clean_up_tokenization_spaces=True,
+        )
+        print("mettrics", metrics)
+        print("prediction", decod)
+        # trainer.log_metrics("predict", metrics)
         trainer.save_metrics("predict", metrics)

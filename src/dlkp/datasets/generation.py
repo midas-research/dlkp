@@ -104,6 +104,7 @@ class KpGenerationDatasets(KpDatasets):
         target_text = self.prepare_one2many_target(
             examples[self.keyphrases_column_name], self.kp_sep_token
         )
+        # assert len(input_text) == len(target_text)
 
         # print(input_text)
 
@@ -129,7 +130,7 @@ class KpGenerationDatasets(KpDatasets):
             ]
 
         inputs["labels"] = targets["input_ids"]
-
+        # print("inputs", inputs)
         return inputs
 
     def get_train_inputs(self):

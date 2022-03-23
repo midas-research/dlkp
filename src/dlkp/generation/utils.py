@@ -152,7 +152,7 @@ class KGDataArguments:
             "value if set."
         },
     )
-    max_predict_samples: Optional[int] = field(
+    max_test_samples: Optional[int] = field(
         default=None,
         metadata={
             "help": "For debugging purposes or quicker training, truncate the number of prediction examples to this "
@@ -232,6 +232,7 @@ class KGDataArguments:
             self.val_max_keyphrases_length = self.max_keyphrases_length
 
 
+@dataclass
 class KGTrainingArguments(TrainingArguments):
     """
     sortish_sampler (`bool`, *optional*, defaults to `False`):
