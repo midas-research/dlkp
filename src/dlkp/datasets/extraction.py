@@ -140,13 +140,12 @@ class KEDatasets(KpDatasets):
                 # For the other tokens in a word, we set the label to either the current label or -100, depending on
                 # the label_all_tokens flag.
                 else:
+
                     label_ids.append(
                         self.label_to_id[label[word_idx]]
-                        if self.data_args.label_all_tokens
-                        else -100
+                        if self.data_args.token_label_scheme == "IOB1"
+                        else self.label_to_id["I"]
                     )
-                    # to avoid error change -100 to 'O' tag i.e. 2 class
-                    # label_ids.append(label_to_id[label[word_idx]] if data_args.label_all_tokens else 2)
                 previous_word_idx = word_idx
 
             labels.append(label_ids)
