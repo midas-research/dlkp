@@ -1,6 +1,6 @@
 import transformers
-from transformers import AutoMOdelForSeq2SeqLM
+from transformers import AutoModelForSeq2SeqLM
 
 
-class AutoSeq2SeqModelForKpGeneration(AutoMOdelForSeq2SeqLM):
+class AutoSeq2SeqModelForKpGeneration(AutoModelForSeq2SeqLM):
     pass

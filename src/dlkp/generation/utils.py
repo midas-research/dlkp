@@ -228,8 +228,8 @@ class KGDataArguments:
                     "csv",
                     "json",
                 ], "`test_file` should be a csv or a json file."
-        if self.val_max_answer_length is None:
-            self.val_max_answer_length = self.max_answer_length
+        if self.val_max_keyphrases_length is None:
+            self.val_max_keyphrases_length = self.max_keyphrases_length
 
 
 class KGTrainingArguments(TrainingArguments):
