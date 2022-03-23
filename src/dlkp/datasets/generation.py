@@ -27,6 +27,7 @@ class KpGenerationDatasets(KpDatasets):
         self.datasets = None
         self.truncation = True
         self.kp_sep_token = self.data_args.keyphrase_sep_token
+        self.load_kp_datasets()
 
     def load_kp_datasets(self):
         if self.data_args.dataset_name is not None:
@@ -87,8 +88,8 @@ class KpGenerationDatasets(KpDatasets):
             assert self.keyphrases_column_name in column_names
 
     @staticmethod
-    def prepare_text_input(text):
-        return " ".join(text)
+    def prepare_text_input(txt):
+        return " ".join(txt)
 
     @staticmethod
     def prepare_one2many_target(keyphrase_list, sep_token):
@@ -97,11 +98,14 @@ class KpGenerationDatasets(KpDatasets):
 
     def preapre_inputs_and_target(self, examples):
         # TODO give option to preapare based on one2one option
+        # print("len of ex", len(examples[self.text_column_name]))
         input_text = self.prepare_text_input(examples[self.text_column_name])
 
         target_text = self.prepare_one2many_target(
             examples[self.keyphrases_column_name], self.kp_sep_token
         )
+
+        # print(input_text)
 
         inputs = self.tokenizer(
             input_text,
@@ -113,15 +117,15 @@ class KpGenerationDatasets(KpDatasets):
         with self.tokenizer.as_target_tokenizer():
             targets = self.tokenizer(
                 target_text,
-                max_len=self.max_keyphrases_length,
+                max_length=self.max_keyphrases_length,
                 padding=self.padding,
                 truncation=self.truncation,
             )
 
         if self.padding and self.data_args.ignore_pad_token_for_loss:
             targets["input_ids"] = [
-                [(t if t != self.tokenizer.pad_token_id else -100) for t in target]
-                for target in targets["input_ids"]
+                (t if t != self.tokenizer.pad_token_id else -100)
+                for t in targets["input_ids"]
             ]
 
         inputs["labels"] = targets["input_ids"]
@@ -159,7 +163,7 @@ class KpGenerationDatasets(KpDatasets):
         # TODO test remove other columns feature
         self.datasets[split_name] = self.datasets[split_name].map(
             self.preapre_inputs_and_target,
-            batched=True,
+            # batched=True,
             # remove_columns=self.columns,
             num_proc=self.data_args.preprocessing_num_workers,
         )
