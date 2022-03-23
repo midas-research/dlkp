@@ -186,7 +186,7 @@ class KGDataArguments:
     )
 
     keyphrase_sep_token: str = field(
-        default="[kp_sep]",
+        default="[KP_SEP]",
         metadata={
             "help": "token which will seprate multiple keyphrases during genration"
         },
