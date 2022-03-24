@@ -144,7 +144,7 @@ class KEDatasets(KpDatasets):
 #                         else -100
 #                     )
                     # to avoid error change -100 to 'O' tag i.e. 2 class
-                    label_ids.append(label_to_id[label[word_idx]] if data_args.label_all_tokens else 2)
+                    label_ids.append(label_to_id[label[word_idx]] if data_args.label_all_tokens else 1)
                 previous_word_idx = word_idx
 
             labels.append(label_ids)
