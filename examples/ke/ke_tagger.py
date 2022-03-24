@@ -9,23 +9,19 @@ training_args = KETrainingArguments(
     output_dir="../../outputs",
     learning_rate=3e-5,
     overwrite_output_dir=True,
-    num_train_epochs=10,
-    per_device_train_batch_size=4,
+    num_train_epochs=50,
+    per_device_train_batch_size=8,
     per_device_eval_batch_size=4,
-    # gradient_accumulation_steps=4,
     do_train=True,
     do_eval=True,
     do_predict=False,
     evaluation_strategy="steps",
     save_steps=1000,
-    eval_steps=100,
-    # lr_scheduler_type= 'cosine',
-    # warmup_steps=200,
+    eval_steps=250,
     logging_steps=100
-    # weight_decay =0.001
 )
 model_args = KEModelArguments(
-    model_name_or_path="roberta-base",
+    model_name_or_path="roberta-large",
     use_crf=False,
 )
 data_args = KEDataArguments(
