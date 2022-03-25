@@ -1,51 +1,9 @@
 from dlkp.models import KeyphraseTagger
-from dlkp.extraction import (
-    KEDataArguments,
-    KEModelArguments,
-    KETrainingArguments,
-)
 
-training_args = KETrainingArguments(
-    output_dir="../../outputs",
-    learning_rate=3e-5,
-    overwrite_output_dir=True,
-    num_train_epochs=10,
-    per_device_train_batch_size=4,
-    per_device_eval_batch_size=4,
-    # gradient_accumulation_steps=4,
-    do_train=True,
-    do_eval=True,
-    do_predict=False,
-    evaluation_strategy="steps",
-    save_steps=1000,
-    eval_steps=100,
-    # lr_scheduler_type= 'cosine',
-    # warmup_steps=200,
-    logging_steps=100
-    # weight_decay =0.001
-)
-model_args = KEModelArguments(
-    model_name_or_path="roberta-base",
-    use_crf=False,
-)
-data_args = KEDataArguments(
-    dataset_name="midas/inspec",
-    dataset_config_name="extraction",
-    pad_to_max_length=True,
-    overwrite_cache=True,
-    label_all_tokens=True,
-    preprocessing_num_workers=8,
-    return_entity_level_metrics=True,
-)
-KeyphraseTagger.train_and_eval(
-    model_args=model_args,
-    data_args=data_args,
-    training_args=training_args
-)
-
+# load the trained keyphrase tagger
 tagger = KeyphraseTagger.load(
-    model_name_or_path="../../outputs"
-    )
+    model_name_or_path="dmahata/dlkp_test"
+)
 
 input_text = "In this work, we explore how to learn task-specific language models aimed towards learning rich " \
              "representation of keyphrases from text documents. We experiment with different masking strategies for " \
@@ -61,5 +19,8 @@ input_text = "In this work, we explore how to learn task-specific language model
              "SOTA, showing that learning rich representation of keyphrases is indeed beneficial for many other " \
              "fundamental NLP tasks."
 
-keyphrases = tagger.predict(input_text)
-print(keyphrases)
+
+def test_ke_tagger_predict():
+    # predict on input text
+    keyphrases = tagger.predict(input_text)
+    assert keyphrases is not None
