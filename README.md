@@ -49,7 +49,9 @@ The project is based on transformers>=4.6.0 and Python 3.6+. If you do not have 
 Then, in your favorite virtual environment, simply do:
 
 ```
-pip install dlkp
+git clone https://github.com/midas-research/dlkp.git
+cd dlkp
+pip install -e .
 ```
 
 ### Example Usage
@@ -60,9 +62,9 @@ pip install dlkp
 
 ## Tutorials
 
-* [Loading Datasets](resources/docs/TUTORIAL_LOADING_DATASETS.md)
+* [Loading Datasets](resources/docs/resources/docs/TUTORIAL_LOADING_DATASETS.md)
 
-* [Training Models](resources/docs/TUTORIAL_TRAINING_MODELS.md)
+* [Training Models](resources/docs/resources/docs/TUTORIAL_TRAINING_MODELS.md)
 
 * [Evaluating Models](resources/docs/TUTORIAL_EVALUATING_MODELS.md)
 
