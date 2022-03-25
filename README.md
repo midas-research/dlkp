@@ -54,7 +54,17 @@ pip install dlkp
 
 ### Example Usage
 
+#### Keyphrase Extraction
+
+#### Keyphrase Generation
+
 ## Tutorials
+
+* [Loading Datasets](resources/docs/TUTORIAL_LOADING_DATASETS.md)
+
+* [Training Models](resources/docs/TUTORIAL_TRAINING_MODELS.md)
+
+* [Evaluating Models](resources/docs/TUTORIAL_EVALUATING_MODELS.md)
 
 ## Citing dlkp
 
