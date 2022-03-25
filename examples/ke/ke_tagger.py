@@ -6,8 +6,8 @@ from dlkp.extraction import (
 )
 
 training_args = KETrainingArguments(
-    output_dir="../../outputs",
-    learning_rate=3e-5,
+    output_dir="/data/models/keyphrase/dlkp/inspec/roberta-large/finetuned-crf",
+    learning_rate=4e-5,
     overwrite_output_dir=True,
     num_train_epochs=50,
     per_device_train_batch_size=8,
@@ -17,19 +17,19 @@ training_args = KETrainingArguments(
     do_predict=False,
     evaluation_strategy="steps",
     save_steps=1000,
-    eval_steps=250,
-    logging_steps=100
+    eval_steps=1000,
+    logging_steps=1000
 )
 model_args = KEModelArguments(
     model_name_or_path="roberta-large",
-    use_crf=False,
+    use_crf=True,
 )
 data_args = KEDataArguments(
     dataset_name="midas/inspec",
     dataset_config_name="extraction",
     pad_to_max_length=True,
     overwrite_cache=True,
-    label_all_tokens=True,
+    label_all_tokens=False,
     preprocessing_num_workers=8,
     return_entity_level_metrics=True,
 )
@@ -40,7 +40,7 @@ KeyphraseTagger.train_and_eval(
 )
 
 tagger = KeyphraseTagger.load(
-    model_name_or_path="../../outputs"
+    model_name_or_path="/data/models/keyphrase/dlkp/inspec/roberta-large/finetuned-crf"
     )
 
 input_text = "In this work, we explore how to learn task-specific language models aimed towards learning rich " \
