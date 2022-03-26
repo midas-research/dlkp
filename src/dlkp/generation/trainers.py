@@ -68,6 +68,7 @@ class KpGenerationTrainer(Trainer):
         metric_key_prefix: str = "test",
         max_length: Optional[int] = None,
         num_beams: Optional[int] = None,
+        num_return_sequences: Optional[int] = None,
     ) -> PredictionOutput:
         """
         Run prediction and returns predictions and potential metrics.
@@ -104,6 +105,11 @@ class KpGenerationTrainer(Trainer):
         )
         self._num_beams = (
             num_beams if num_beams is not None else self.args.generation_num_beams
+        )
+        self._num_return_sequences = (
+            num_return_sequences
+            if num_return_sequences is not None
+            else self.args.num_return_sequences
         )
         return super().predict(
             test_dataset, ignore_keys=ignore_keys, metric_key_prefix=metric_key_prefix
@@ -153,6 +159,7 @@ class KpGenerationTrainer(Trainer):
             if self._num_beams is not None
             else self.model.config.num_beams,
             "synced_gpus": False,
+            "num_return_sequences": self._num_return_sequences,
         }
 
         if "attention_mask" in inputs:

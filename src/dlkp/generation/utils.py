@@ -273,3 +273,9 @@ class KGTrainingArguments(TrainingArguments):
             "to the `num_beams` value of the model configuration."
         },
     )
+    num_return_sequences: Optional[int] = field(
+        default=None,
+        metadata={
+            "help": "number of sequence to be returned by mode.generate() function"
+        },
+    )
