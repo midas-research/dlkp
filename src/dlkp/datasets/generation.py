@@ -1,7 +1,7 @@
 import os, sys, logging
 from dataclasses import dataclass, field
 from typing import Optional
-from datasets import ClassLabel, load_dataset
+from datasets import ClassLabel, load_dataset, Dataset
 from . import KpDatasets
 
 logger = logging.getLogger(__name__)
@@ -28,6 +28,10 @@ class KpGenerationDatasets(KpDatasets):
         self.truncation = True
         self.kp_sep_token = self.data_args.keyphrase_sep_token
         self.load_kp_datasets()
+
+    @staticmethod
+    def load_kp_datasets_from_text(txt):
+        return Dataset.from_dict({"document": txt})
 
     def load_kp_datasets(self):
         if self.data_args.dataset_name is not None:

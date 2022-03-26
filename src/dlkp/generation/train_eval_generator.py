@@ -36,7 +36,7 @@ require_version(
 logger = logging.getLogger(__name__)
 
 
-def train_eval_generator(model_args, data_args, training_args):
+def train_and_eval_generation_model(model_args, data_args, training_args):
     # See all possible arguments in src/transformers/training_args.py
     # or by passing the --help flag to this script.
     # We now keep distinct sets of args, for a cleaner separation of concerns.
