@@ -140,11 +140,16 @@ class KEDatasets(KpDatasets):
                 # For the other tokens in a word, we set the label to either the current label or -100, depending on
                 # the label_all_tokens flag.
                 else:
-
+                    #                     label_ids.append(
+                    #                         self.label_to_id[label[word_idx]]
+                    #                         if self.data_args.label_all_tokens
+                    #                         else -100
+                    #                     )
+                    # to avoid error change -100 to 'O' tag i.e. 2 class
                     label_ids.append(
                         self.label_to_id[label[word_idx]]
-                        if self.data_args.token_label_scheme == "IOB1"
-                        else self.label_to_id["I"]
+                        if self.data_args.label_all_tokens
+                        else 1
                     )
                 previous_word_idx = word_idx
 
@@ -152,9 +157,6 @@ class KEDatasets(KpDatasets):
         tokenized_inputs["labels"] = labels
 
         return tokenized_inputs
-
-    def get_predicted_labels(self, predictions):
-        self.datasets = "g"
 
     def get_extracted_keyphrases(self, predicted_labels, split_name="test"):
         assert self.datasets[split_name].num_rows == len(
