@@ -62,11 +62,11 @@ pip install -e .
 
 ## Tutorials
 
-* [Loading Datasets](resources/docs/resources/docs/TUTORIAL_LOADING_DATASETS.md)
+* [Loading Datasets](resources/docs/TUTORIAL_LOADING_DATASETS.md)
 
-* [Training Models](resources/docs/resources/docs/TUTORIAL_TRAINING_MODELS.md)
+* [Training Models](resources/docs/TUTORIAL_TRAINING_MODELS.md)
 
-* [Evaluating Models](resources/docs/TUTORIAL_EVALUATING_MODELS.md)
+* [Evaluating Models](resources/docs1/TUTORIAL_EVALUATING_MODELS.md)
 
 ## Citing dlkp
 
