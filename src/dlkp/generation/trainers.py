@@ -151,7 +151,6 @@ class KpGenerationTrainer(Trainer):
 
         has_labels = "labels" in inputs
         inputs = self._prepare_inputs(inputs)
-
         # XXX: adapt synced_gpus for fairscale as well
         gen_kwargs = {
             "max_length": self._max_length
@@ -161,8 +160,6 @@ class KpGenerationTrainer(Trainer):
             if self._num_beams is not None
             else self.model.config.num_beams,
             "synced_gpus": False,
-            "num_return_sequences": self._num_return_sequences,
-            "output_scores": self._output_score,
         }
 
         if "attention_mask" in inputs:
@@ -190,9 +187,9 @@ class KpGenerationTrainer(Trainer):
             )
 
         with torch.no_grad():
-            with self.autocast_smart_context_manager():
-                outputs = model(**inputs)
             if has_labels:
+                with self.autocast_smart_context_manager():
+                    outputs = model(**inputs)
                 if self.label_smoother is not None:
                     loss = (
                         self.label_smoother(outputs, inputs["labels"]).mean().detach()

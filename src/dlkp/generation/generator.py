@@ -26,7 +26,9 @@ class KeyphraseGenerator:
             config=self.config,
         )
         # Data collator
-        self.data_collator = DataCollatorForSeq2SeqKpGneration(self.tokenizer)
+        self.data_collator = DataCollatorForSeq2SeqKpGneration(
+            self.tokenizer, model=self.model
+        )
         # Trainer
         self.trainer = KpGenerationTrainer(
             model=self.model, tokenizer=self.tokenizer, data_collator=self.data_collator
@@ -54,25 +56,37 @@ class KeyphraseGenerator:
 
         self.datasets = KpGenerationDatasets.load_kp_datasets_from_text(texts)
 
-        model_input = self.tokenizer(
-            self.datasets["document"], padding=True, truncation=True
-        )
+        def tokenize(ex):
+            model_input = self.tokenizer(
+                ex["document"], padding=True, truncation=True, return_tensors="pt"
+            )
+            return model_input
 
-        gen_out = self.trainer.predict(
-            model_input,
-            num_return_sequences=num_return_sequences,
+        self.datasets = self.tokenizer(
+            self.datasets["document"],
+            padding=True,
+            truncation=True,
+            return_tensors="pt",
+        )
+        # print(self.model.device)
+        gen_out = self.model.generate(
+            inputs=self.datasets["input_ids"].to(device=self.model.device),
             max_length=max_length,
             num_beams=num_beams,
+            num_return_sequences=num_return_sequences,
+            attention_mask=self.datasets["attention_mask"].to(device=self.model.device)
+            if "attention_mask" in self.datasets
+            else None,
             output_scores=output_seq_score,
+            return_dict_in_generate=True,
         )
-
         generated_seq = self.tokenizer.batch_decode(
-            gen_out.predictions,
+            gen_out.sequences,
             skip_special_tokens=True,
             clean_up_tokenization_spaces=True,
         )
 
-        return generated_seq
+        return generated_seq, gen_out.sequences_scores
 
     @staticmethod
     def train_and_eval(model_args, data_args, training_args):

@@ -1,6 +1,6 @@
 from dlkp.generation import KGTrainingArguments, KGModelArguments, KGDataArguments
 
-from dlkp.generation.train_eval_generator import train_eval_generator
+from dlkp.generation.train_eval_generator import train_and_eval_generation_model
 
 model_args = KGModelArguments(
     model_name_or_path="/media/nas_mount/Debanjan/amardeep/dlkp_out/inspec_t5_gen"
@@ -37,4 +37,15 @@ training_args = KGTrainingArguments(
     # weight_decay =0.001
 )
 
-train_eval_generator(model_args, data_args, training_args)
+# train_eval_generator(model_args, data_args, training_args)
+
+from dlkp.models import KeyphraseGenerator
+
+gen = KeyphraseGenerator.load(
+    "/media/nas_mount/Debanjan/amardeep/dlkp_out/inspec_t5_gen"
+)
+text = "Random forests or random decision forests is an ensemble learning method for classification, regression and other tasks that operates by constructing a multitude of decision trees at training time. For classification tasks, the output of the random forest is the class selected by most trees. For regression tasks, the mean or average prediction of the individual trees is returned. Random decision forests correct for decision trees' habit of overfitting to their training set.Random forests generally outperform decision trees, but their accuracy is lower than gradient boosted trees. However, data characteristics can affect their performance."
+
+gen_out = gen.generate(text, num_return_sequences=2, output_seq_score=True)
+
+print(gen_out)
