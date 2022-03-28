@@ -158,7 +158,6 @@ def train_and_eval_generation_model(model_args, data_args, training_args):
     metric = load_metric("sacrebleu")
 
     def compute_metrics(p: EvalPrediction):
-        print("prid compute met", type(p.predictions[0]), p.predictions[0].shape)
         return metric.compute(predictions=p.predictions, references=p.label_ids)
 
     # Post-processing:
