@@ -29,7 +29,6 @@ data_args = KEDataArguments(
     dataset_config_name="extraction",
     pad_to_max_length=True,
     overwrite_cache=True,
-    label_all_tokens=False,
     preprocessing_num_workers=8,
     return_entity_level_metrics=True,
 )
