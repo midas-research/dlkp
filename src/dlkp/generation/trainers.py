@@ -68,8 +68,6 @@ class KpGenerationTrainer(Trainer):
         metric_key_prefix: str = "test",
         max_length: Optional[int] = None,
         num_beams: Optional[int] = None,
-        num_return_sequences: Optional[int] = None,
-        output_scores: bool = False,
     ) -> PredictionOutput:
         """
         Run prediction and returns predictions and potential metrics.

@@ -37,19 +37,6 @@ logger = logging.getLogger(__name__)
 
 
 def train_and_eval_generation_model(model_args, data_args, training_args):
-    # See all possible arguments in src/transformers/training_args.py
-    # or by passing the --help flag to this script.
-    # We now keep distinct sets of args, for a cleaner separation of concerns.
-
-    # parser = HfArgumentParser((KGModelArguments, KGDataArguments, KGTrainingArguments))
-    # if len(sys.argv) == 2 and sys.argv[1].endswith(".json"):
-    #     # If we pass only one argument to the script and it's the path to a json file,
-    #     # let's parse it to get our arguments.
-    #     model_args, data_args, training_args = parser.parse_json_file(
-    #         json_file=os.path.abspath(sys.argv[1])
-    #     )
-    # else:
-    #     model_args, data_args, training_args = parser.parse_args_into_dataclasses()
 
     # Setup logging
     logging.basicConfig(
@@ -163,53 +150,19 @@ def train_and_eval_generation_model(model_args, data_args, training_args):
             skip_special_tokens=True,
             clean_up_tokenization_spaces=True,
         )
+        labels = [[x for x in label if x != -100] for label in p.label_ids]
         originals = tokenizer.batch_decode(
-            p.label_ids,
+            labels,
             skip_special_tokens=True,
             clean_up_tokenization_spaces=True,
         )
 
+        predictions = [
+            pred.split(data_args.keyphrase_sep_token) for pred in predictions
+        ]
+        originals = [orig.split(data_args.keyphrase_sep_token) for orig in originals]
+
         return compute_kp_level_metrics(predictions, originals)
-
-    # Post-processing:
-    # def post_processing_function(
-    #     examples: datasets.Dataset,
-    #     features: datasets.Dataset,
-    #     outputs: EvalLoopOutput,
-    #     stage="eval",
-    # ):
-    #     # Decode the predicted tokens.
-    #     preds = outputs.predictions
-    #     if isinstance(preds, tuple):
-    #         preds = preds[0]
-    #     decoded_preds = tokenizer.batch_decode(preds, skip_special_tokens=True)
-
-    #     # Build a map example to its corresponding features.
-    #     example_id_to_index = {k: i for i, k in enumerate(examples["id"])}
-    #     feature_per_example = {
-    #         example_id_to_index[feature["example_id"]]: i
-    #         for i, feature in enumerate(features)
-    #     }
-    #     predictions = {}
-    #     # Let's loop over all the examples!
-    #     for example_index, example in enumerate(examples):
-    #         # This is the index of the feature associated to the current example.
-    #         feature_index = feature_per_example[example_index]
-    #         predictions[example["id"]] = decoded_preds[feature_index]
-
-    #     # Format the result to the format the metric expects.
-    #     if data_args.version_2_with_negative:
-    #         formatted_predictions = [
-    #             {"id": k, "prediction_text": v, "no_answer_probability": 0.0}
-    #             for k, v in predictions.items()
-    #         ]
-    #     else:
-    #         formatted_predictions = [
-    #             {"id": k, "prediction_text": v} for k, v in predictions.items()
-    #         ]
-
-    #     references = [{"id": ex["id"], "answers": ex[answer_column]} for ex in examples]
-    #     return EvalPrediction(predictions=formatted_predictions, label_ids=references)
 
     # Initialize our Trainer
     trainer = KpGenerationTrainer(
@@ -249,13 +202,13 @@ def train_and_eval_generation_model(model_args, data_args, training_args):
         if data_args.num_beams is not None
         else training_args.generation_num_beams
     )
-    # if training_args.do_eval:
-    #     logger.info("*** Evaluate ***")
-    #     metrics = trainer.evaluate(
-    #         max_length=max_length, num_beams=num_beams, metric_key_prefix="eval"
-    #     )
-    #     trainer.log_metrics("eval", metrics)
-    #     trainer.save_metrics("eval", metrics)
+    if training_args.do_eval:
+        logger.info("*** Evaluate ***")
+        metrics = trainer.evaluate(
+            max_length=max_length, num_beams=num_beams, metric_key_prefix="eval"
+        )
+        trainer.log_metrics("eval", metrics)
+        trainer.save_metrics("eval", metrics)
 
     # Prediction
     if training_args.do_predict:
@@ -268,7 +221,4 @@ def train_and_eval_generation_model(model_args, data_args, training_args):
             skip_special_tokens=True,
             clean_up_tokenization_spaces=True,
         )
-        print("mettrics", metrics)
-        print("prediction", decod)
-        # trainer.log_metrics("predict", metrics)
         trainer.save_metrics("predict", metrics)
