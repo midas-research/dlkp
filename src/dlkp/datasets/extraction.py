@@ -143,7 +143,7 @@ class KEDatasets(KpDatasets):
                         (
                             self.label_to_id["I"]
                             if label[word_idx] in ["B", "I"]
-                            else label[word_idx]
+                            else self.label_to_id[label[word_idx]]
                         )
                         if self.data_args.label_all_tokens
                         else -100
