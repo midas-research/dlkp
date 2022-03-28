@@ -56,6 +56,26 @@ def compute_metrics(p):
         }
 
 
+def compute_kp_level_metrics(predictions, originals, do_stem=True):
+    avg_metrics = {}
+    assert len(predictions) == len(
+        originals
+    ), "len of pridicted examples and original examples is not same"
+    total_ex = len(predictions)
+    for predicted_kps, original_kps in zip(predictions, originals):
+        metrics = compute_f1s(predicted_kps, original_kps, do_stem)
+        for k in metrics:
+            if k not in avg_metrics:
+                avg_metrics[k] = 0.0
+            avg_metrics[k] += metrics[k]
+
+    if total_ex > 0:
+        for k in avg_metrics:
+            avg_metrics[k] /= total_ex
+
+    return avg_metrics
+
+
 def compute_f1s(predicted_kps, original_kps, do_stem=True):
     stemmer = PorterStemmer()
     if do_stem:
@@ -72,11 +92,12 @@ def compute_f1s(predicted_kps, original_kps, do_stem=True):
     original_kps = set(original_kps)
 
     correctly_matched = [1 if kp in original_kps else 0 for kp in predicted_kps]
+
     metrics = []
     for k in [5, 10, "m"]:
         metrics.append(calculate_f1_k(correctly_matched, original_kps, k))
-    results = {}
 
+    results = {}
     for metric in metrics:
         for key, value in metric.items():
             results[key] = value

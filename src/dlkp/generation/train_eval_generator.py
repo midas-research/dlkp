@@ -1,4 +1,3 @@
-from curses import raw
 import logging
 import os
 import sys
@@ -25,6 +24,7 @@ from ..datasets.generation import KpGenerationDatasets
 from .models import AutoSeq2SeqModelForKpGeneration
 from .data_collators import DataCollatorForSeq2SeqKpGneration
 from .trainers import KpGenerationTrainer
+from ..metrics.metrics import compute_kp_level_metrics
 
 check_min_version("4.17.0")
 
@@ -158,7 +158,18 @@ def train_and_eval_generation_model(model_args, data_args, training_args):
     metric = load_metric("sacrebleu")
 
     def compute_metrics(p: EvalPrediction):
-        return metric.compute(predictions=p.predictions, references=p.label_ids)
+        predictions = tokenizer.batch_decode(
+            p.predictions,
+            skip_special_tokens=True,
+            clean_up_tokenization_spaces=True,
+        )
+        originals = tokenizer.batch_decode(
+            p.label_ids,
+            skip_special_tokens=True,
+            clean_up_tokenization_spaces=True,
+        )
+
+        return compute_kp_level_metrics(predictions, originals)
 
     # Post-processing:
     # def post_processing_function(
