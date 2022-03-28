@@ -133,23 +133,22 @@ class KEDatasets(KpDatasets):
                 # ignored in the loss function.
                 if word_idx is None:
                     label_ids.append(-100)
-                    # label_ids.append(2)  # to avoid error change -100 to 'O' tag i.e. 2 class
+
                 # We set the label for the first token of each word.
                 elif word_idx != previous_word_idx:
                     label_ids.append(self.label_to_id[label[word_idx]])
-                # For the other tokens in a word, we set the label to either the current label or -100, depending on
-                # the label_all_tokens flag.
+                # For the other tokens in a word, we set the label to either the current label or -100, depending on the label_all_tokens flag.
                 else:
-                    #                     label_ids.append(
-                    #                         self.label_to_id[label[word_idx]]
-                    #                         if self.data_args.label_all_tokens
-                    #                         else -100
-                    #                     )
-                    # to avoid error change -100 to 'O' tag i.e. 2 class
+                    # only IOB2 scheme since decoding is for IOB1 only
+                    # TODO (AD) add IOB2 encoding and decoding
                     label_ids.append(
-                        self.label_to_id[label[word_idx]]
+                        (
+                            self.label_to_id["I"]
+                            if label[word_idx] in ["B", "I"]
+                            else label[word_idx]
+                        )
                         if self.data_args.label_all_tokens
-                        else 1
+                        else -100
                     )
                 previous_word_idx = word_idx
 
