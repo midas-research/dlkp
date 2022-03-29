@@ -86,6 +86,7 @@ class KEDatasets(KpDatasets):
             assert self.label_column_name in column_names
 
     def get_train_dataset(self):
+        # TODO tokenize and allign data from here
         if "train" not in self.datasets:
             return None
         return self.datasets["train"]
@@ -106,6 +107,7 @@ class KEDatasets(KpDatasets):
             txt,
             padding=padding,
             truncation=True,
+            # TODO incoporate max seq len argument
             # We use this argument because the texts in our dataset are lists of words (with a label for each word).
             is_split_into_words=True,
             return_special_tokens_mask=True,

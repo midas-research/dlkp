@@ -104,7 +104,9 @@ class KEDataArguments:
     )
     valid_data_percent: Optional[int] = field(
         default=0,
-        metadata={"help": "percentage of training data to be used for validation purpose"},
+        metadata={
+            "help": "percentage of training data to be used for validation purpose"
+        },
     )
     test_data_percent: Optional[int] = field(
         default=0,

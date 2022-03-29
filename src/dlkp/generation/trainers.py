@@ -14,10 +14,10 @@ from transformers.trainer_utils import (
 )
 import logging
 
-logger = logging.get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 
-class KpGenTrainer(Trainer):
+class KpGenerationTrainer(Trainer):
     def evaluate(
         self,
         eval_dataset: Optional[Dataset] = None,
@@ -105,6 +105,12 @@ class KpGenTrainer(Trainer):
         self._num_beams = (
             num_beams if num_beams is not None else self.args.generation_num_beams
         )
+        self._num_return_sequences = (
+            num_return_sequences
+            if num_return_sequences is not None
+            else self.args.num_return_sequences
+        )
+        self._output_score = output_scores
         return super().predict(
             test_dataset, ignore_keys=ignore_keys, metric_key_prefix=metric_key_prefix
         )
@@ -143,7 +149,6 @@ class KpGenTrainer(Trainer):
 
         has_labels = "labels" in inputs
         inputs = self._prepare_inputs(inputs)
-
         # XXX: adapt synced_gpus for fairscale as well
         gen_kwargs = {
             "max_length": self._max_length
@@ -180,9 +185,9 @@ class KpGenTrainer(Trainer):
             )
 
         with torch.no_grad():
-            with self.autocast_smart_context_manager():
-                outputs = model(**inputs)
             if has_labels:
+                with self.autocast_smart_context_manager():
+                    outputs = model(**inputs)
                 if self.label_smoother is not None:
                     loss = (
                         self.label_smoother(outputs, inputs["labels"]).mean().detach()
