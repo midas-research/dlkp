@@ -7,7 +7,7 @@ from transformers import TrainingArguments
 
 
 @dataclass
-class KpGenModelArguments:
+class KGModelArguments:
     """
     Arguments pertaining to which model/config/tokenizer we are going to fine-tune from.
     """
@@ -57,7 +57,7 @@ class KpGenModelArguments:
 
 
 @dataclass
-class KpGenDataArguments:
+class KGDataArguments:
     """
     Arguments pertaining to what data we are going to input our model for training and eval.
     """
@@ -73,13 +73,13 @@ class KpGenDataArguments:
         },
     )
     text_column_name: Optional[str] = field(
-        default="documents",
+        default=None,
         metadata={
             "help": "The name of the column in the datasets containing the text (for keyphrase extraction)."
         },
     )
     keyphrases_column_name: Optional[str] = field(
-        default="keyphrases",
+        default=None,
         metadata={
             "help": "The name of the column in the datasets containing the keyphrases (for keyphrase extraction)."
         },
@@ -152,7 +152,7 @@ class KpGenDataArguments:
             "value if set."
         },
     )
-    max_predict_samples: Optional[int] = field(
+    max_test_samples: Optional[int] = field(
         default=None,
         metadata={
             "help": "For debugging purposes or quicker training, truncate the number of prediction examples to this "
@@ -186,7 +186,7 @@ class KpGenDataArguments:
     )
 
     keyphrase_sep_token: str = field(
-        default="[kp_sep]",
+        default="[KP_SEP]",
         metadata={
             "help": "token which will seprate multiple keyphrases during genration"
         },
@@ -228,11 +228,12 @@ class KpGenDataArguments:
                     "csv",
                     "json",
                 ], "`test_file` should be a csv or a json file."
-        if self.val_max_answer_length is None:
-            self.val_max_answer_length = self.max_answer_length
+        if self.val_max_keyphrases_length is None:
+            self.val_max_keyphrases_length = self.max_keyphrases_length
 
 
-class KpGenTrainingArguments(TrainingArguments):
+@dataclass
+class KGTrainingArguments(TrainingArguments):
     """
     sortish_sampler (`bool`, *optional*, defaults to `False`):
         Whether to use a *sortish sampler* or not. Only possible if the underlying datasets are *Seq2SeqDataset* for
@@ -270,5 +271,11 @@ class KpGenTrainingArguments(TrainingArguments):
         metadata={
             "help": "The `num_beams` to use on each evaluation loop when `predict_with_generate=True`. Will default "
             "to the `num_beams` value of the model configuration."
+        },
+    )
+    num_return_sequences: Optional[int] = field(
+        default=None,
+        metadata={
+            "help": "number of sequence to be returned by mode.generate() function"
         },
     )

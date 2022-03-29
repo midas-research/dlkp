@@ -86,6 +86,7 @@ class KEDatasets(KpDatasets):
             assert self.label_column_name in column_names
 
     def get_train_dataset(self):
+        # TODO tokenize and allign data from here
         if "train" not in self.datasets:
             return None
         return self.datasets["train"]
@@ -106,6 +107,7 @@ class KEDatasets(KpDatasets):
             txt,
             padding=padding,
             truncation=True,
+            # TODO incoporate max seq len argument
             # We use this argument because the texts in our dataset are lists of words (with a label for each word).
             is_split_into_words=True,
             return_special_tokens_mask=True,
@@ -131,20 +133,23 @@ class KEDatasets(KpDatasets):
                 # ignored in the loss function.
                 if word_idx is None:
                     label_ids.append(-100)
-                    # label_ids.append(2)  # to avoid error change -100 to 'O' tag i.e. 2 class
+
                 # We set the label for the first token of each word.
                 elif word_idx != previous_word_idx:
                     label_ids.append(self.label_to_id[label[word_idx]])
-                # For the other tokens in a word, we set the label to either the current label or -100, depending on
-                # the label_all_tokens flag.
+                # For the other tokens in a word, we set the label to either the current label or -100, depending on the label_all_tokens flag.
                 else:
-#                     label_ids.append(
-#                         self.label_to_id[label[word_idx]]
-#                         if self.data_args.label_all_tokens
-#                         else -100
-#                     )
-                    # to avoid error change -100 to 'O' tag i.e. 2 class
-                    label_ids.append(self.label_to_id[label[word_idx]] if self.data_args.label_all_tokens else 1)
+                    # only IOB2 scheme since decoding is for IOB1 only
+                    # TODO (AD) add IOB2 encoding and decoding
+                    label_ids.append(
+                        (
+                            self.label_to_id["I"]
+                            if label[word_idx] in ["B", "I"]
+                            else self.label_to_id[label[word_idx]]
+                        )
+                        if self.data_args.label_all_tokens
+                        else -100
+                    )
                 previous_word_idx = word_idx
 
             labels.append(label_ids)
