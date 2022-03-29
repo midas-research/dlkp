@@ -150,17 +150,22 @@ def train_and_eval_generation_model(model_args, data_args, training_args):
             skip_special_tokens=True,
             clean_up_tokenization_spaces=True,
         )
-        labels = [[x for x in label if x != -100] for label in p.label_ids]
+        labels = [
+            [x for x in label if x != label_pad_token_id] for label in p.label_ids
+        ]
         originals = tokenizer.batch_decode(
             labels,
             skip_special_tokens=True,
             clean_up_tokenization_spaces=True,
         )
-
-        predictions = [
-            pred.split(data_args.keyphrase_sep_token) for pred in predictions
-        ]
-        originals = [orig.split(data_args.keyphrase_sep_token) for orig in originals]
+        # get keyphrases list from string
+        if data_args.task_type == "one2many":
+            predictions = [
+                pred.split(data_args.keyphrase_sep_token) for pred in predictions
+            ]
+            originals = [
+                orig.split(data_args.keyphrase_sep_token) for orig in originals
+            ]
 
         return compute_kp_level_metrics(predictions, originals)
 
