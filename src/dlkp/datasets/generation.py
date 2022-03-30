@@ -100,24 +100,56 @@ class KpGenerationDatasets(KpDatasets):
         sep_token = " " + sep_token + " "
         return sep_token.join(keyphrase_list)
 
+    def pre_process_keyphrases(self, text_ids, kp_list):
+        kp_order_list = []
+        kp_set = set(kp_list)
+        text = self.tokenizer.decode(
+            text_ids, skip_special_tokens=True, clean_up_tokenization_spaces=True
+        )
+
+        for kp in kp_set:
+            kp = kp.strip()
+            kp_index = text.find(kp)
+            kp_order_list.append((kp_index, kp))
+
+        if self.data_args.cat_sequence:
+            kp_order_list.sort()
+        present_kp, absent_kp = [], []
+
+        for kp_index, kp in kp_order_list:
+            if kp_index < 0:
+                absent_kp.append(kp)
+            else:
+                present_kp.append(kp)
+
+        return present_kp, absent_kp
+
     def preapre_inputs_and_target(self, examples):
         # TODO give option to preapare based on one2one option
-        # print("len of ex", len(examples[self.text_column_name]))
+
         input_text = self.prepare_text_input(examples[self.text_column_name])
-
-        target_text = self.prepare_one2many_target(
-            examples[self.keyphrases_column_name], self.kp_sep_token
-        )
-        # assert len(input_text) == len(target_text)
-
-        # print(input_text)
-
         inputs = self.tokenizer(
             input_text,
             max_length=self.max_seq_length,
             padding=self.padding,
             truncation=self.truncation,
         )
+
+        if self.data_args.cat_sequence or self.data_args.present_keyphrase_only:
+            # get present and absent kps, present will be ordered if cat_sequence = True
+            present_kp, absent_kp = self.pre_process_keyphrases(
+                text_ids=inputs["token_ids"],
+                kp_list=examples[self.keyphrases_column_name],
+            )
+
+            keyphrases = present_kp
+            if self.data_args.cat_sequence:
+                keyphrases += absent_kp
+
+        else:
+            keyphrases = examples[self.keyphrases_column_name]
+
+        target_text = self.prepare_one2many_target(keyphrases, self.kp_sep_token)
 
         with self.tokenizer.as_target_tokenizer():
             targets = self.tokenizer(
@@ -134,7 +166,6 @@ class KpGenerationDatasets(KpDatasets):
             ]
 
         inputs["labels"] = targets["input_ids"]
-        # print("inputs", inputs)
         return inputs
 
     def get_train_inputs(self):
