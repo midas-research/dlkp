@@ -47,10 +47,6 @@ class KEModelArguments:
         default=False,
         metadata={"help": "whether to use CRF head"},
     )
-    use_bilstm: bool = field(  # not necessary
-        default=False,
-        metadata={"help": "use Bidirectional LSTM while fine-tuning"},
-    )
 
 
 @dataclass
