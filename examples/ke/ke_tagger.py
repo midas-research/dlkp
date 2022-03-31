@@ -5,14 +5,16 @@ from dlkp.extraction import (
     KETrainingArguments,
 )
 
+model_name = "roberta-base"
 
+print("Training: ", model_name)
 training_args = KETrainingArguments(
-    output_dir="../../outputs",
+    output_dir=f"/data/models/keyphrase/dlkp/inspec/extraction/{model_name}/finetuned-blstm-crf",
     learning_rate=4e-5,
     overwrite_output_dir=True,
-    num_train_epochs=50,
-    per_device_train_batch_size=8,
-    per_device_eval_batch_size=4,
+    num_train_epochs=100,
+    per_device_train_batch_size=2,
+    per_device_eval_batch_size=2,
     do_train=True,
     do_eval=True,
     do_predict=False,
@@ -22,10 +24,10 @@ training_args = KETrainingArguments(
     logging_steps=1000,
 )
 
-
 model_args = KEModelArguments(
-    model_name_or_path="roberta-base",
+    model_name_or_path=model_name,
     use_crf=True,
+    use_bilstm=True
 )
 
 data_args = KEDataArguments(
@@ -37,13 +39,12 @@ data_args = KEDataArguments(
     return_entity_level_metrics=True,
 )
 
-
 KeyphraseTagger.train_and_eval(
     model_args=model_args, data_args=data_args, training_args=training_args
 )
 
 tagger = KeyphraseTagger.load(
-    model_name_or_path="/data/models/keyphrase/dlkp/inspec/kbir/finetuned-crf"
+    model_name_or_path=f"/data/models/keyphrase/dlkp/inspec/extraction/{model_name}/finetuned-blstm-crf"
 )
 
 
@@ -65,3 +66,4 @@ input_text = (
 
 keyphrases = tagger.predict(input_text)
 print(keyphrases)
+
