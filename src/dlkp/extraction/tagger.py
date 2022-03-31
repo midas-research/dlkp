@@ -50,7 +50,10 @@ class KeyphraseTagger:
         # tokenize current datsets
         def tokenize_(txt):
             return KEDatasets.tokenize_text(
-                txt["document"].split(), self.tokenizer, "max_length"
+                txt["document"].split(),
+                tokenizer=self.tokenizer,
+                padding="max_length",
+                max_seq_len=None,
             )
 
         self.datasets = self.datasets.map(tokenize_)

@@ -47,10 +47,6 @@ class KEModelArguments:
         default=False,
         metadata={"help": "whether to use CRF head"},
     )
-    use_bilstm: bool = field(  # not necessary
-        default=False,
-        metadata={"help": "use Bidirectional LSTM while fine-tuning"},
-    )
 
 
 @dataclass
@@ -121,8 +117,15 @@ class KEDataArguments:
         default=None,
         metadata={"help": "The number of processes to use for the preprocessing."},
     )
+    max_seq_length: int = field(
+        default=None,
+        metadata={
+            "help": "The maximum total input sequence length after tokenization. Sequences longer "
+            "than this will be truncated, sequences shorter will be padded."
+        },
+    )
     pad_to_max_length: bool = field(
-        default=False,
+        default=True,
         metadata={
             "help": "Whether to pad all samples to model maximum sentence length. "
             "If False, will pad the samples dynamically when batching to the maximum length in the batch. More "

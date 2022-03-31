@@ -14,6 +14,8 @@ class KpGenerationDatasets(KpDatasets):
         self.tokenizer = tokenizer_
         self.text_column_name = self.data_args.text_column_name
         self.keyphrases_column_name = self.data_args.keyphrases_column_name
+        if self.data_args.max_seq_length is None:
+            self.data_args.max_seq_length = self.tokenizer.model_max_length
         if self.data_args.max_seq_length > self.tokenizer.model_max_length:
             logger.warning(
                 f"The max_seq_length passed ({self.data_args.max_seq_length}) is larger than the maximum length for the"
