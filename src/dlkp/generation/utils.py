@@ -199,6 +199,20 @@ class KGDataArguments:
         },
     )
 
+    present_keyphrase_only: bool = field(
+        default=False,
+        metadata={
+            "help": "setting this to true will consider the present keyphrase in the text only"
+        },
+    )
+
+    cat_sequence: bool = field(
+        default=False,
+        metadata={
+            "help": "True if you want to concatenate the keyphrases in the order they appear. abstractive keyphrases will be appended in the last with random/alphabetical ordering"
+        },
+    )
+
     def __post_init__(self):
         if (
             self.dataset_name is None
