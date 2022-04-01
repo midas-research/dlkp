@@ -5,16 +5,16 @@ from dlkp.extraction import (
     KETrainingArguments,
 )
 
-model_name = "roberta-base"
+model_name = "bloomberg/KBIR"
 
 print("Training: ", model_name)
 training_args = KETrainingArguments(
-    output_dir=f"/data/models/keyphrase/dlkp/inspec/extraction/{model_name}/finetuned-blstm-crf",
+    output_dir=f"/data/models/keyphrase/dlkp/inspec/extraction/{model_name}/finetuned",
     learning_rate=4e-5,
     overwrite_output_dir=True,
     num_train_epochs=100,
-    per_device_train_batch_size=2,
-    per_device_eval_batch_size=2,
+    per_device_train_batch_size=8,
+    per_device_eval_batch_size=8,
     do_train=True,
     do_eval=True,
     do_predict=False,
@@ -26,12 +26,12 @@ training_args = KETrainingArguments(
 
 model_args = KEModelArguments(
     model_name_or_path=model_name,
-    use_crf=True,
-    use_bilstm=True
+    use_crf=False,
+    tokenizer_name="roberta-large",
 )
 
 data_args = KEDataArguments(
-    dataset_name="midas/inspec",
+    dataset_name="midas/semeval2010",
     dataset_config_name="extraction",
     pad_to_max_length=True,
     overwrite_cache=True,
@@ -44,7 +44,7 @@ KeyphraseTagger.train_and_eval(
 )
 
 tagger = KeyphraseTagger.load(
-    model_name_or_path=f"/data/models/keyphrase/dlkp/inspec/extraction/{model_name}/finetuned-blstm-crf"
+    model_name_or_path=f"/data/models/keyphrase/dlkp/inspec/extraction/{model_name}/finetuned"
 )
 
 
