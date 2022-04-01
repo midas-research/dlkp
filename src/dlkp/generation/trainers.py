@@ -105,12 +105,6 @@ class KpGenerationTrainer(Trainer):
         self._num_beams = (
             num_beams if num_beams is not None else self.args.generation_num_beams
         )
-        self._num_return_sequences = (
-            num_return_sequences
-            if num_return_sequences is not None
-            else self.args.num_return_sequences
-        )
-        self._output_score = output_scores
         return super().predict(
             test_dataset, ignore_keys=ignore_keys, metric_key_prefix=metric_key_prefix
         )

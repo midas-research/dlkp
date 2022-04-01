@@ -108,10 +108,10 @@ class KpGenerationDatasets(KpDatasets):
         text = self.tokenizer.decode(
             text_ids, skip_special_tokens=True, clean_up_tokenization_spaces=True
         )
-
+        text = text.lower()
         for kp in kp_set:
             kp = kp.strip()
-            kp_index = text.find(kp)
+            kp_index = text.find(kp.lower())
             kp_order_list.append((kp_index, kp))
 
         if self.data_args.cat_sequence:
@@ -123,7 +123,6 @@ class KpGenerationDatasets(KpDatasets):
                 absent_kp.append(kp)
             else:
                 present_kp.append(kp)
-
         return present_kp, absent_kp
 
     def preapre_inputs_and_target(self, examples):
@@ -140,8 +139,9 @@ class KpGenerationDatasets(KpDatasets):
         if self.data_args.cat_sequence or self.data_args.present_keyphrase_only:
             # get present and absent kps, present will be ordered if cat_sequence = True
             present_kp, absent_kp = self.pre_process_keyphrases(
-                text_ids=inputs["token_ids"],
+                text_ids=inputs["input_ids"],
                 kp_list=examples[self.keyphrases_column_name],
+                # TODO (AD) need to do the hack here for considering absent kps for temp training
             )
 
             keyphrases = present_kp
@@ -152,7 +152,6 @@ class KpGenerationDatasets(KpDatasets):
             keyphrases = examples[self.keyphrases_column_name]
 
         target_text = self.prepare_one2many_target(keyphrases, self.kp_sep_token)
-
         with self.tokenizer.as_target_tokenizer():
             targets = self.tokenizer(
                 target_text,
