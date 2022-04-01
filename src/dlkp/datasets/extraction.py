@@ -1,5 +1,8 @@
+import logging
 from datasets import load_dataset, Dataset
 from . import KpDatasets
+
+logger = logging.getLogger(__name__)
 
 
 class KEDatasets(KpDatasets):
@@ -12,6 +15,16 @@ class KEDatasets(KpDatasets):
         )
         self.label_column_name = (
             self.data_args.label_column_name if self.data_args is not None else None
+        )
+        if self.data_args.max_seq_length is None:
+            self.data_args.max_seq_length = self.tokenizer.model_max_length
+        if self.data_args.max_seq_length > self.tokenizer.model_max_length:
+            logger.warning(
+                f"The max_seq_length passed ({self.data_args.max_seq_length}) is larger than the maximum length for the"
+                f"model ({self.tokenizer.model_max_length}). Using max_seq_length={self.tokenizer.model_max_length}."
+            )
+        self.max_seq_length = min(
+            self.data_args.max_seq_length, self.tokenizer.model_max_length
         )
         self.padding = "max_length" if self.data_args.pad_to_max_length else False
         self.datasets = None
@@ -102,12 +115,12 @@ class KEDatasets(KpDatasets):
         return self.datasets["test"]
 
     @staticmethod
-    def tokenize_text(txt, tokenizer, padding=False):
+    def tokenize_text(txt, tokenizer, padding, max_seq_len):
         tokenized_text = tokenizer(
             txt,
+            max_length=max_seq_len,
             padding=padding,
             truncation=True,
-            # TODO incoporate max seq len argument
             # We use this argument because the texts in our dataset are lists of words (with a label for each word).
             is_split_into_words=True,
             return_special_tokens_mask=True,
@@ -119,6 +132,7 @@ class KEDatasets(KpDatasets):
             examples[self.text_column_name],
             tokenizer=self.tokenizer,
             padding=self.padding,
+            max_seq_len=self.max_seq_length,
         )
         labels = []
         if self.label_column_name is None:
