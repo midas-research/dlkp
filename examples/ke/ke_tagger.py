@@ -5,13 +5,16 @@ from dlkp.extraction import (
     KETrainingArguments,
 )
 
+model_name = "bloomberg/KBIR"
+
+print("Training: ", model_name)
 training_args = KETrainingArguments(
-    output_dir="/data/models/keyphrase/dlkp/inspec/kbir/finetuned-crf",
+    output_dir=f"/data/models/keyphrase/dlkp/inspec/extraction/{model_name}/finetuned",
     learning_rate=4e-5,
     overwrite_output_dir=True,
-    num_train_epochs=50,
+    num_train_epochs=100,
     per_device_train_batch_size=8,
-    per_device_eval_batch_size=4,
+    per_device_eval_batch_size=8,
     do_train=True,
     do_eval=True,
     do_predict=False,
@@ -20,25 +23,30 @@ training_args = KETrainingArguments(
     eval_steps=1000,
     logging_steps=1000,
 )
+
 model_args = KEModelArguments(
-    model_name_or_path="bloomberg/KBIR",
-    use_crf=True,
+    model_name_or_path=model_name,
+    use_crf=False,
+    tokenizer_name="roberta-large",
 )
+
 data_args = KEDataArguments(
-    dataset_name="midas/inspec",
+    dataset_name="midas/semeval2010",
     dataset_config_name="extraction",
     pad_to_max_length=True,
     overwrite_cache=True,
     preprocessing_num_workers=8,
     return_entity_level_metrics=True,
 )
+
 KeyphraseTagger.train_and_eval(
     model_args=model_args, data_args=data_args, training_args=training_args
 )
 
 tagger = KeyphraseTagger.load(
-    model_name_or_path="/data/models/keyphrase/dlkp/inspec/kbir/finetuned-crf"
+    model_name_or_path=f"/data/models/keyphrase/dlkp/inspec/extraction/{model_name}/finetuned"
 )
+
 
 input_text = (
     "In this work, we explore how to learn task-specific language models aimed towards learning rich "
@@ -58,3 +66,4 @@ input_text = (
 
 keyphrases = tagger.predict(input_text)
 print(keyphrases)
+

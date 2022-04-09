@@ -55,7 +55,7 @@ training_args = KETrainingArguments(
 
 ```python
 model_args = KEModelArguments(
-    model_name_or_path="bloomberg/KBIR",
+    model_name_or_path="roberta-base",
     use_crf=True,
 )
 ```
