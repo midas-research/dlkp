@@ -112,3 +112,10 @@ Output:
 ```
 
 ## Keyphrase Generation
+
+* **Step 1** - Import the required modules
+```python
+from dlkp.models import KeyphraseGenerator
+from dlkp.generation import KGTrainingArguments, KGModelArguments, KGDataArguments
+```
+
