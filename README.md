@@ -20,7 +20,7 @@ dlkp is:
   evaluating keyphrase extraction and generation models and helps to generate evaluation reports of your models.
   
 
-## State-of-the-Art Models
+<!-- ## State-of-the-Art Models
 
 dlkp ships with state-of-the-art transformer models for the tasks of keyphrase extraction and generation 
 
@@ -38,7 +38,7 @@ dlkp ships with state-of-the-art transformer models for the tasks of keyphrase e
 |  ---  | ----------- | ---------------- | ------------- | ------------- |
 | | | | | |
 | | | | | |
-| | | | | |
+| | | | | | -->
   
 ## Quick Start
 
