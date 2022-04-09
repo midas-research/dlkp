@@ -119,3 +119,74 @@ from dlkp.models import KeyphraseGenerator
 from dlkp.generation import KGTrainingArguments, KGModelArguments, KGDataArguments
 ```
 
+* **Step 2** - Initialize the data arguments.
+
+```python
+data_args = KGDataArguments(
+    dataset_name="midas/inspec",
+    dataset_config_name="generation",
+    text_column_name="document",
+    keyphrases_column_name="extractive_keyphrases",
+    n_best_size=5,
+    num_beams=3,
+    cat_sequence=True,
+)
+```
+
+This will automatically download the **inspec** corpus from the huggingface hub and prepare it for training a keyphrase 
+generation model.
+
+* **Step 3** - Initialize the training arguments.
+
+```python
+training_args = KGTrainingArguments(
+    output_dir="{path_to_your_directory}",
+    predict_with_generate=True,
+    learning_rate=4e-5,
+    overwrite_output_dir=True,
+    num_train_epochs=50,
+    per_device_train_batch_size=8,
+    per_device_eval_batch_size=4,
+    do_train=True,
+    do_eval=True,
+    do_predict=False,
+    eval_steps=1000,
+    logging_steps=1000
+)
+```
+* **Step 4** - Initialize the model arguments.
+
+```python
+model_args = KGModelArguments(model_name_or_path="bloomberg/KeyBART")
+```
+
+* **Step 5** - Train and evaluate the model.
+
+```python
+ KeyphraseGenerator.train_and_eval(model_args, data_args, training_args)
+
+```
+* **Step 6** - Visualize your training progress using tensorboard.
+
+```commandline
+tensorboard --logdir {path_to_your_log_dir}
+```
+
+* **Step 7** - Load the trained model for prediction
+```python
+generator = KeyphraseGenerator.load(
+    "{path_to_your_directory_where_model_is_saved}"
+)
+input_text = "Random forests or random decision forests is an ensemble learning method for classification, regression and other tasks that operates by constructing a multitude of decision trees at training time. For classification tasks, the output of the random forest is the class selected by most trees. For regression tasks, the mean or average prediction of the individual trees is returned. Random decision forests correct for decision trees' habit of overfitting to their training set.Random forests generally outperform decision trees, but their accuracy is lower than gradient boosted trees. However, data characteristics can affect their performance."
+
+generator_out = generator.generate(input_text)
+print(generator_out)
+```
+Output:
+```commandline
+['random decision forests [KP_SEP] ensemble learning method [KP_SEP] classification [KP_SEP] regression [KP_SEP] data characteristics']
+```
+
+for one2many keyphrase generation tasks, generated keyphrases are seprated by a seprator token (i.e. [KP_SEP]) as shown in above example. 
+
+
