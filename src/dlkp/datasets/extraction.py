@@ -177,13 +177,49 @@ class KEDatasets(KpDatasets):
         ), "number of rows in original dataset and predicted labels are not same"
         self.predicted_labels = predicted_labels
         self.datasets[split_name] = self.datasets[split_name].map(
-            self.extract_kp_from_tags_,
+            self.get_extracted_keyphrases_,
             num_proc=self.data_args.preprocessing_num_workers,
             with_indices=True,
         )
         return self.datasets[split_name]["extracted_keyphrase"]
 
-    def extract_kp_from_tags_(self, examples, idx):
+    def get_original_keyphrases(self, split_name="test"):
+        assert "labels" in self.datasets[split_name], "truth labels are not present"
+        self.datasets[split_name] = self.datasets[split_name].map(
+            self.get_original_keyphrases_,
+            num_proc=self.data_args.preprocessing_num_workers,
+            with_indices=True,
+        )
+        return self.datasets[split_name]["original_keyphrase"]
+
+    def get_original_keyphrases_(self, examples, idx):
+        ids = examples["input_ids"]
+        special_tok_mask = examples["special_tokens_mask"]
+        labels = examples["labels"]
+        tokens = self.tokenizer.convert_ids_to_tokens(ids, skip_special_tokens=True)
+        tags = [
+            self.id_to_label[p] for (p, m) in zip(labels, special_tok_mask) if m == 0
+        ]
+        assert len(tokens) == len(
+            tags
+        ), "number of tags (={}) in prediction and tokens(={}) are not same for {}th".format(
+            len(tags), len(tokens), idx
+        )
+        token_ids = self.tokenizer.convert_tokens_to_ids(
+            tokens
+        )  # needed so that we can use batch decode directly and not mess up with convert tokens to string algorithm
+        all_kps = self.extract_kp_from_tags(token_ids, tags)
+
+        original_kps = self.tokenizer.batch_decode(
+            all_kps,
+            skip_special_tokens=True,
+            clean_up_tokenization_spaces=True,
+        )
+        examples["original_keyphrase"] = original_kps
+
+        return examples
+
+    def get_extracted_keyphrases_(self, examples, idx):
         ids = examples["input_ids"]
         special_tok_mask = examples["special_tokens_mask"]
         tokens = self.tokenizer.convert_ids_to_tokens(ids, skip_special_tokens=True)
