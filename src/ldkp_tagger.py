@@ -28,10 +28,13 @@ def preprocess_extraction(ex):
     ]
     text = []
     bio_tags = []
-    for sec, txt, tags in zip(ex["sections"], ex["sec_text"], ex["sec_bio_tags"]):
-        if sec in imp_sec_list:
+    for sec in imp_sec_list:
+        if sec in ex["sections"]:
+            idx = ex["sections"].index(sec)
+            txt, tags = ex["sec_text"][idx], ex["sec_bio_tags"][idx]
             text += txt
             bio_tags += tags
+
     assert len(text) == len(bio_tags)
     ex[text_column_name] = text
     ex[label_column_name] = bio_tags
@@ -45,16 +48,16 @@ training_args = KETrainingArguments(
     output_dir=f"/media/nas_mount/Debanjan/amardeep/long_ldkp/tagger/longformer-ldkp3k",
     learning_rate=4e-5,
     overwrite_output_dir=True,
-    num_train_epochs=6,
-    per_device_train_batch_size=1,
+    num_train_epochs=5,
+    per_device_train_batch_size=2,
     per_device_eval_batch_size=2,
     do_train=True,
-    do_eval=False,
+    do_eval=True,
     do_predict=False,
     evaluation_strategy="steps",
     save_steps=2000,
     eval_steps=2000,
-    logging_steps=1000,
+    logging_steps=250,
 )
 
 model_args = KEModelArguments(
