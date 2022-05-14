@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import Optional, Callable
 from transformers import TrainingArguments
 
 
@@ -60,6 +60,12 @@ class KEDataArguments:
     Arguments for training and evaluation data
     """
 
+    preprocess_func: Optional[Callable] = field(
+        default=None,
+        metadata={
+            "help": "a function to preprocess the dataset, which take a dataset object as input and return two columns text_column_name and label_column_name"
+        },
+    )
     dataset_name: Optional[str] = field(
         default=None,
         metadata={"help": "The name of the dataset to use (via the datasets library)."},
@@ -155,6 +161,12 @@ class KEDataArguments:
         default=None,
         metadata={
             "help": "Provide the name of a path for the cache file. It is used to store the results of the computation instead of the automatically generated cache file name."
+        },
+    )
+    cache_dir: Optional[str] = field(
+        default=None,
+        metadata={
+            "help": "Provide the name of a path for the cache dir. It is used to store the results of the computation."
         },
     )
 
