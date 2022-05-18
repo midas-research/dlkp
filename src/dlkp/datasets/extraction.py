@@ -28,6 +28,7 @@ class KEDatasets(KpDatasets):
         )
         self.padding = "max_length" if self.data_args.pad_to_max_length else False
         self.datasets = None
+        self.preprocess_function = self.data_args.preprocess_func
         self.set_labels()
         self.load_kp_datasets()
 
@@ -53,7 +54,9 @@ class KEDatasets(KpDatasets):
         if self.data_args.dataset_name is not None:
             # Downloading and loading a dataset from the hub.
             self.datasets = load_dataset(
-                self.data_args.dataset_name, self.data_args.dataset_config_name
+                self.data_args.dataset_name,
+                self.data_args.dataset_config_name,
+                cache_dir=self.data_args.cache_dir,
             )
         else:
             data_files = {}
@@ -66,7 +69,15 @@ class KEDatasets(KpDatasets):
             elif self.data_args.test_file is not None:
                 data_files["test"] = self.data_args.test_file
                 extension = self.data_args.test_file.split(".")[-1]
-            self.datasets = load_dataset(extension, data_files=data_files)
+            self.datasets = load_dataset(
+                extension, data_files=data_files, cache_dir=self.data_args.cache_dir
+            )
+        if self.preprocess_function:
+            self.datasets = self.datasets.map(
+                self.preprocess_function,
+                num_proc=self.data_args.preprocessing_num_workers,
+            )
+            print("preprocess done new daasets labels", self.datasets)
         if "train" in self.datasets:
             column_names = self.datasets["train"].column_names
             features = self.datasets["train"].features
