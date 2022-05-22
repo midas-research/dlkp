@@ -185,6 +185,7 @@ def train_eval_extraction_model(model_args, data_args, training_args):
         predictions, labels, metrics = trainer.predict(
             eval_dataset, metric_key_prefix="eval"
         )
+        predictions = np.argmax(predictions, axis=2)
         output_eval_file = os.path.join(
             training_args.output_dir, "eval_results_KPE.txt"
         )
@@ -206,7 +207,7 @@ def train_eval_extraction_model(model_args, data_args, training_args):
                 logger.info("Keyphrase level metrics\n")
                 writer.write("Keyphrase level metrics\n")
 
-                for key, value in sorted(kp_level_metrics):
+                for key, value in sorted(kp_level_metrics.items()):
                     logger.info(f"  {key} = {value}")
                     writer.write(f"{key} = {value}\n")
 
@@ -254,7 +255,7 @@ def train_eval_extraction_model(model_args, data_args, training_args):
                 logger.info("Keyphrase level metrics\n")
                 writer.write("Keyphrase level metrics\n")
 
-                for key, value in sorted(kp_level_metrics):
+                for key, value in sorted(kp_level_metrics.items()):
                     logger.info(f"  {key} = {value}")
                     writer.write(f"{key} = {value}\n")
 

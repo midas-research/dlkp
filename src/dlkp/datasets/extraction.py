@@ -195,7 +195,9 @@ class KEDatasets(KpDatasets):
         return self.datasets[split_name]["extracted_keyphrase"]
 
     def get_original_keyphrases(self, split_name="test"):
-        assert "labels" in self.datasets[split_name], "truth labels are not present"
+        assert (
+            "labels" in self.datasets[split_name].features
+        ), "truth labels are not present"
         self.datasets[split_name] = self.datasets[split_name].map(
             self.get_original_keyphrases_,
             num_proc=self.data_args.preprocessing_num_workers,
