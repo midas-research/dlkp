@@ -182,17 +182,83 @@ class KEDatasets(KpDatasets):
 
         return tokenized_inputs
 
-    def get_extracted_keyphrases(self, predicted_labels, split_name="test"):
+    def get_extracted_keyphrases(
+        self, predicted_labels, split_name="test", label_score=None, score_method=None
+    ):
+        """
+        takes predicted labels as input and out put extracted keyphrase.
+        threee type of score_method is available 'avg', 'max' and first.
+        In 'avg' we take an airthimatic avergae of score of all the tags, in 'max' method maximum score among all the tags and in 'first' score of first tag is used to calculate the confidence score of whole keyphrase
+        """
         assert self.datasets[split_name].num_rows == len(
             predicted_labels
         ), "number of rows in original dataset and predicted labels are not same"
+        if score_method:
+            assert (
+                label_score != None
+            ), "label score is not provided to calculate confidence score"
+            assert len(predicted_labels) == len(
+                label_score
+            ), "len of predicted label is not same as of len of label score"
+
         self.predicted_labels = predicted_labels
+        self.label_score = label_score
+        self.score_method = score_method
         self.datasets[split_name] = self.datasets[split_name].map(
             self.get_extracted_keyphrases_,
             num_proc=self.data_args.preprocessing_num_workers,
             with_indices=True,
         )
-        return self.datasets[split_name]["extracted_keyphrase"]
+        self.predicted_labels = None
+        self.label_score = None
+        self.score_method = None
+        if "confidence_score" in self.datasets[split_name].features:
+            return (
+                self.datasets[split_name]["extracted_keyphrase"],
+                self.datasets[split_name]["confidence_score"],
+            )
+        return self.datasets[split_name]["extracted_keyphrase"], None
+
+    def get_extracted_keyphrases_(self, examples, idx):
+        ids = examples["input_ids"]
+        special_tok_mask = examples["special_tokens_mask"]
+        tokens = self.tokenizer.convert_ids_to_tokens(ids, skip_special_tokens=True)
+        tags = [
+            self.id_to_label[p]
+            for (p, m) in zip(self.predicted_labels[idx], special_tok_mask)
+            if m == 0
+        ]
+        scores = None
+        if self.score_method:
+            scores = [
+                scr
+                for (scr, m) in zip(self.label_score[idx], special_tok_mask)
+                if m == 0
+            ]
+        assert len(tokens) == len(
+            tags
+        ), "number of tags (={}) in prediction and tokens(={}) are not same for {}th".format(
+            len(tags), len(tokens), idx
+        )
+        token_ids = self.tokenizer.convert_tokens_to_ids(
+            tokens
+        )  # needed so that we can use batch decode directly and not mess up with convert tokens to string algorithm
+        all_kps, confidence_scores = self.extract_kp_from_tags(
+            token_ids, tags, scores=scores, score_method=self.score_method
+        )
+        extracted_kps = self.tokenizer.batch_decode(
+            all_kps,
+            skip_special_tokens=True,
+            clean_up_tokenization_spaces=True,
+        )
+        examples["extracted_keyphrase"] = extracted_kps
+        if confidence_scores:
+            assert len(extracted_kps) == len(
+                confidence_scores
+            ), "len of scores and kps are not same"
+            examples["confidence_score"] = confidence_scores
+
+        return examples
 
     def get_original_keyphrases(self, split_name="test"):
         assert (
@@ -232,50 +298,66 @@ class KEDatasets(KpDatasets):
 
         return examples
 
-    def get_extracted_keyphrases_(self, examples, idx):
-        ids = examples["input_ids"]
-        special_tok_mask = examples["special_tokens_mask"]
-        tokens = self.tokenizer.convert_ids_to_tokens(ids, skip_special_tokens=True)
-        tags = [
-            self.id_to_label[p]
-            for (p, m) in zip(self.predicted_labels[idx], special_tok_mask)
-            if m == 0
-        ]
-        assert len(tokens) == len(
-            tags
-        ), "number of tags (={}) in prediction and tokens(={}) are not same for {}th".format(
-            len(tags), len(tokens), idx
-        )
-        token_ids = self.tokenizer.convert_tokens_to_ids(
-            tokens
-        )  # needed so that we can use batch decode directly and not mess up with convert tokens to string algorithm
-        all_kps = self.extract_kp_from_tags(token_ids, tags)
-
-        extracted_kps = self.tokenizer.batch_decode(
-            all_kps,
-            skip_special_tokens=True,
-            clean_up_tokenization_spaces=True,
-        )
-        examples["extracted_keyphrase"] = extracted_kps
-
-        return examples
+    @staticmethod
+    def calculate_confidence_score(scores=None, score_method=None):
+        assert scores and score_method
+        if score_method == "avg":
+            return float(sum(scores) / len(scores))
+        elif score_method == "first":
+            return scores[0]
+        elif score_method == "max":
+            return max(scores)
 
     @staticmethod
-    def extract_kp_from_tags(token_ids, tags):
+    def extract_kp_from_tags(token_ids, tags, scores=None, score_method=None):
+        if score_method:
+            assert len(tags) == len(
+                scores
+            ), "Score is not none and len of score is not equal to tags"
         all_kps = []
+        all_kps_score = []
         current_kp = []
-        for id, tag in zip(token_ids, tags):
+        current_score = []
+
+        for i, id, tag in enumerate(zip(token_ids, tags)):
             if tag == "O" and len(current_kp) > 0:  # current kp ends
+                if score_method:
+                    confidence_score = KEDatasets.calculate_confidence_score(
+                        scores=current_score, score_method=score_method
+                    )
+                    current_score = []
+                    all_kps_score.append(confidence_score)
+
                 all_kps.append(current_kp)
                 current_kp = []
             elif tag == "B":  # a new kp starts
                 if len(current_kp) > 0:
+                    if score_method:
+                        confidence_score = KEDatasets.calculate_confidence_score(
+                            scores=current_score, score_method=score_method
+                        )
+                        all_kps_score.append(confidence_score)
                     all_kps.append(current_kp)
                 current_kp = []
+                current_score = []
                 current_kp.append(id)
+                if score_method:
+                    current_score.append(scores[i])
             elif tag == "I":  # it is part of current kp so just append
                 current_kp.append(id)
+                if score_method:
+                    current_score.append(scores[i])
         if len(current_kp) > 0:  # check for the last KP in sequence
             all_kps.append(current_kp)
+            if score_method:
+                confidence_score = KEDatasets.calculate_confidence_score(
+                    scores=current_score, score_method=score_method
+                )
+                all_kps_score.append(confidence_score)
+        if score_method:
+            assert len(all_kps) == len(
+                all_kps_score
+            ), "len of kps and score calculated is not same"
+            return all_kps, all_kps_score
 
-        return all_kps
+        return all_kps, None

@@ -185,13 +185,18 @@ def train_eval_extraction_model(model_args, data_args, training_args):
         predictions, labels, metrics = trainer.predict(
             eval_dataset, metric_key_prefix="eval"
         )
-        predictions = np.argmax(predictions, axis=2)
+
+        predicted_labels = np.argmax(predictions, axis=2)
+        label_score = np.amax(predictions, axis=2)
         output_eval_file = os.path.join(
             training_args.output_dir, "eval_results_KPE.txt"
         )
         if trainer.is_world_process_zero():
-            predicted_kps = dataset.get_extracted_keyphrases(
-                predicted_labels=predictions, split_name="validation"
+            predicted_kps, confidence_scores = dataset.get_extracted_keyphrases(
+                predicted_labels=predicted_labels,
+                split_name="validation",
+                label_score=label_score,
+                score_method=training_args.score_aggregation_method,
             )
             original_kps = dataset.get_original_keyphrases(split_name="validation")
 
@@ -211,13 +216,38 @@ def train_eval_extraction_model(model_args, data_args, training_args):
                     logger.info(f"  {key} = {value}")
                     writer.write(f"{key} = {value}\n")
 
+                total_keyphrases = sum([len(x) for x in confidence_scores])
+                total_confidence_scores = sum([sum(x) for x in confidence_scores])
+                avg_confidence_scores = total_confidence_scores / total_keyphrases
+                total_examples = len(predicted_kps)
+
+                avg_predicted_kps = total_keyphrases / total_examples
+
+                logger.info(
+                    "average confidence score: {}\n".format(avg_confidence_scores)
+                )
+                logger.info(
+                    "average number of keyphrases predicted: {}\n".format(
+                        avg_predicted_kps
+                    )
+                )
+                writer.write(
+                    "average confidence score: {}\n".format(avg_confidence_scores)
+                )
+                writer.write(
+                    "average number of keyphrases predicted: {}\n".format(
+                        avg_predicted_kps
+                    )
+                )
+
     # Predict
     if training_args.do_predict:
         logger.info("*** Predict ***")
 
         assert test_dataset is not None, "test data is none"
         predictions, labels, metrics = trainer.predict(test_dataset)
-        predictions = np.argmax(predictions, axis=2)
+        predicted_labels = np.argmax(predictions, axis=2)
+        label_score = np.amax(predictions, axis=2)
 
         output_test_results_file = os.path.join(
             training_args.output_dir, "test_results.txt"
@@ -230,8 +260,11 @@ def train_eval_extraction_model(model_args, data_args, training_args):
             training_args.output_dir, "test_predictions_BIO.txt"
         )
         if trainer.is_world_process_zero():
-            predicted_kps = dataset.get_extracted_keyphrases(
-                predicted_labels=predictions, split_name="test"
+            predicted_kps, confidence_scores = dataset.get_extracted_keyphrases(
+                predicted_labels=predicted_labels,
+                split_name="validation",
+                label_score=label_score,
+                score_method=training_args.score_aggregation_method,
             )
             original_kps = dataset.get_original_keyphrases(split_name="test")
 
@@ -242,6 +275,7 @@ def train_eval_extraction_model(model_args, data_args, training_args):
                 {
                     "extracted_keyphrase": predicted_kps,
                     "original_keyphrases": original_kps,
+                    "confidence_scores": confidence_scores,
                 }
             )
             df.to_csv(output_test_predictions_file, index=False)
@@ -258,5 +292,29 @@ def train_eval_extraction_model(model_args, data_args, training_args):
                 for key, value in sorted(kp_level_metrics.items()):
                     logger.info(f"  {key} = {value}")
                     writer.write(f"{key} = {value}\n")
+
+                total_keyphrases = sum([len(x) for x in confidence_scores])
+                total_confidence_scores = sum([sum(x) for x in confidence_scores])
+                avg_confidence_scores = total_confidence_scores / total_keyphrases
+                total_examples = len(predicted_kps)
+
+                avg_predicted_kps = total_keyphrases / total_examples
+
+                logger.info(
+                    "average confidence score: {}\n".format(avg_confidence_scores)
+                )
+                logger.info(
+                    "average number of keyphrases predicted: {}\n".format(
+                        avg_predicted_kps
+                    )
+                )
+                writer.write(
+                    "average confidence score: {}\n".format(avg_confidence_scores)
+                )
+                writer.write(
+                    "average number of keyphrases predicted: {}\n".format(
+                        avg_predicted_kps
+                    )
+                )
 
     return results

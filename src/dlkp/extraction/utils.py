@@ -1,14 +1,23 @@
 from dataclasses import dataclass, field
-from typing import Optional, Callable
+from typing import Optional
 from transformers import TrainingArguments
 
 
 @dataclass
 class KETrainingArguments(TrainingArguments):
-    return_keyphrase_level_metrics: bool = field(
-        default=True,
+    return_keyphrase_level_metrics: bool = (
+        field(
+            default=True,
+            metadata={
+                "help": "Whether to return keyphrase level metrics during evaluation or just the BIO tag level."
+            },
+        ),
+    )
+
+    score_aggregation_method: bool = field(
+        default="avg",
         metadata={
-            "help": "Whether to return keyphrase level metrics during evaluation or just the BIO tag level."
+            "help": "which method among avg, max and first to use while calculating confidence score of a keyphrase. None indicates not to calculate this s ore"
         },
     )
 
@@ -60,12 +69,6 @@ class KEDataArguments:
     Arguments for training and evaluation data
     """
 
-    preprocess_func: Optional[Callable] = field(
-        default=None,
-        metadata={
-            "help": "a function to preprocess the dataset, which take a dataset object as input and return two columns text_column_name and label_column_name"
-        },
-    )
     dataset_name: Optional[str] = field(
         default=None,
         metadata={"help": "The name of the dataset to use (via the datasets library)."},
@@ -161,12 +164,6 @@ class KEDataArguments:
         default=None,
         metadata={
             "help": "Provide the name of a path for the cache file. It is used to store the results of the computation instead of the automatically generated cache file name."
-        },
-    )
-    cache_dir: Optional[str] = field(
-        default=None,
-        metadata={
-            "help": "Provide the name of a path for the cache dir. It is used to store the results of the computation."
         },
     )
 
