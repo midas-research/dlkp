@@ -194,9 +194,9 @@ class KEDatasets(KpDatasets):
             predicted_labels
         ), "number of rows in original dataset and predicted labels are not same"
         if score_method:
-            assert (
-                label_score != None
-            ), "label score is not provided to calculate confidence score"
+            # assert (
+            #     label_score
+            # ), "label score is not provided to calculate confidence score"
             assert len(predicted_labels) == len(
                 label_score
             ), "len of predicted label is not same as of len of label score"
@@ -243,15 +243,15 @@ class KEDatasets(KpDatasets):
         token_ids = self.tokenizer.convert_tokens_to_ids(
             tokens
         )  # needed so that we can use batch decode directly and not mess up with convert tokens to string algorithm
-        all_kps, confidence_scores = self.extract_kp_from_tags(
-            token_ids, tags, scores=scores, score_method=self.score_method
-        )
-        extracted_kps = self.tokenizer.batch_decode(
-            all_kps,
-            skip_special_tokens=True,
-            clean_up_tokenization_spaces=True,
+        extracted_kps, confidence_scores = self.extract_kp_from_tags(
+            token_ids,
+            tags,
+            tokenizer=self.tokenizer,
+            scores=scores,
+            score_method=self.score_method,
         )
         examples["extracted_keyphrase"] = extracted_kps
+        examples["confidence_score"] = []
         if confidence_scores:
             assert len(extracted_kps) == len(
                 confidence_scores
@@ -287,13 +287,10 @@ class KEDatasets(KpDatasets):
         token_ids = self.tokenizer.convert_tokens_to_ids(
             tokens
         )  # needed so that we can use batch decode directly and not mess up with convert tokens to string algorithm
-        all_kps = self.extract_kp_from_tags(token_ids, tags)
-
-        original_kps = self.tokenizer.batch_decode(
-            all_kps,
-            skip_special_tokens=True,
-            clean_up_tokenization_spaces=True,
+        original_kps, _ = self.extract_kp_from_tags(
+            token_ids, tags, tokenizer=self.tokenizer
         )
+
         examples["original_keyphrase"] = original_kps
 
         return examples
@@ -309,7 +306,9 @@ class KEDatasets(KpDatasets):
             return max(scores)
 
     @staticmethod
-    def extract_kp_from_tags(token_ids, tags, scores=None, score_method=None):
+    def extract_kp_from_tags(
+        token_ids, tags, tokenizer, scores=None, score_method=None
+    ):
         if score_method:
             assert len(tags) == len(
                 scores
@@ -319,7 +318,7 @@ class KEDatasets(KpDatasets):
         current_kp = []
         current_score = []
 
-        for i, id, tag in enumerate(zip(token_ids, tags)):
+        for i, (id, tag) in enumerate(zip(token_ids, tags)):
             if tag == "O" and len(current_kp) > 0:  # current kp ends
                 if score_method:
                     confidence_score = KEDatasets.calculate_confidence_score(
@@ -354,10 +353,25 @@ class KEDatasets(KpDatasets):
                     scores=current_score, score_method=score_method
                 )
                 all_kps_score.append(confidence_score)
-        if score_method:
-            assert len(all_kps) == len(
-                all_kps_score
-            ), "len of kps and score calculated is not same"
-            return all_kps, all_kps_score
+        all_kps = tokenizer.batch_decode(
+            all_kps,
+            skip_special_tokens=True,
+            clean_up_tokenization_spaces=True,
+        )
+        final_kps, final_score = [], []
+        kps_set = {}
+        for i, kp in enumerate(all_kps):
+            if kp.lower() not in kps_set:
+                final_kps.append(kp.lower())
+                kps_set[kp.lower()] = -1
+                if score_method:
+                    kps_set[kp.lower()] = all_kps_score[i]
+                    final_score.append(all_kps_score[i])
 
-        return all_kps, None
+        if score_method:
+            assert len(final_kps) == len(
+                final_score
+            ), "len of kps and score calculated is not same"
+            return final_kps, final_score
+
+        return final_kps, None

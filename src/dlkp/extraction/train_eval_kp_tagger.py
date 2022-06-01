@@ -185,9 +185,9 @@ def train_eval_extraction_model(model_args, data_args, training_args):
         predictions, labels, metrics = trainer.predict(
             eval_dataset, metric_key_prefix="eval"
         )
-
+        predictions = np.exp(predictions)
         predicted_labels = np.argmax(predictions, axis=2)
-        label_score = np.amax(predictions, axis=2)
+        label_score = np.amax(predictions, axis=2) / np.sum(predictions, axis=2)
         output_eval_file = os.path.join(
             training_args.output_dir, "eval_results_KPE.txt"
         )
@@ -246,8 +246,9 @@ def train_eval_extraction_model(model_args, data_args, training_args):
 
         assert test_dataset is not None, "test data is none"
         predictions, labels, metrics = trainer.predict(test_dataset)
+        predictions = np.exp(predictions)
         predicted_labels = np.argmax(predictions, axis=2)
-        label_score = np.amax(predictions, axis=2)
+        label_score = np.amax(predictions, axis=2) / np.sum(predictions, axis=2)
 
         output_test_results_file = os.path.join(
             training_args.output_dir, "test_results.txt"
@@ -262,7 +263,7 @@ def train_eval_extraction_model(model_args, data_args, training_args):
         if trainer.is_world_process_zero():
             predicted_kps, confidence_scores = dataset.get_extracted_keyphrases(
                 predicted_labels=predicted_labels,
-                split_name="validation",
+                split_name="test",
                 label_score=label_score,
                 score_method=training_args.score_aggregation_method,
             )
