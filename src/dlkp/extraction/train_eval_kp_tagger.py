@@ -38,7 +38,7 @@ from .trainer import KpExtractionTrainer, CrfKpExtractionTrainer
 from .models import AutoModelForKpExtraction, AutoCrfModelforKpExtraction
 from .utils import KEDataArguments, KEModelArguments, KETrainingArguments
 from .data_collators import DataCollatorForKpExtraction
-from ..metrics.metrics import compute_metrics
+from ..metrics.metrics import compute_metrics, compute_kp_level_metrics
 from ..datasets.extraction import KEDatasets
 
 logger = logging.getLogger(__name__)
@@ -182,16 +182,63 @@ def train_eval_extraction_model(model_args, data_args, training_args):
     results = {}
     if training_args.do_eval:
         logger.info("*** Evaluate ***")
-        results = trainer.evaluate()
+        predictions, labels, metrics = trainer.predict(
+            eval_dataset, metric_key_prefix="eval"
+        )
+        predictions = np.exp(predictions)
+        predicted_labels = np.argmax(predictions, axis=2)
+        label_score = np.amax(predictions, axis=2) / np.sum(predictions, axis=2)
         output_eval_file = os.path.join(
             training_args.output_dir, "eval_results_KPE.txt"
         )
         if trainer.is_world_process_zero():
+            predicted_kps, confidence_scores = dataset.get_extracted_keyphrases(
+                predicted_labels=predicted_labels,
+                split_name="validation",
+                label_score=label_score,
+                score_method=training_args.score_aggregation_method,
+            )
+            original_kps = dataset.get_original_keyphrases(split_name="validation")
+
+            kp_level_metrics = compute_kp_level_metrics(
+                predictions=predicted_kps, originals=original_kps, do_stem=True
+            )
             with open(output_eval_file, "w") as writer:
                 logger.info("***** Eval results *****")
-                for key, value in results.items():
+                for key, value in sorted(metrics.items()):
                     logger.info(f"  {key} = {value}")
                     writer.write(f"{key} = {value}\n")
+
+                logger.info("Keyphrase level metrics\n")
+                writer.write("Keyphrase level metrics\n")
+
+                for key, value in sorted(kp_level_metrics.items()):
+                    logger.info(f"  {key} = {value}")
+                    writer.write(f"{key} = {value}\n")
+
+                total_keyphrases = sum([len(x) for x in confidence_scores])
+                total_confidence_scores = sum([sum(x) for x in confidence_scores])
+                avg_confidence_scores = total_confidence_scores / total_keyphrases
+                total_examples = len(predicted_kps)
+
+                avg_predicted_kps = total_keyphrases / total_examples
+
+                logger.info(
+                    "average confidence score: {}\n".format(avg_confidence_scores)
+                )
+                logger.info(
+                    "average number of keyphrases predicted: {}\n".format(
+                        avg_predicted_kps
+                    )
+                )
+                writer.write(
+                    "average confidence score: {}\n".format(avg_confidence_scores)
+                )
+                writer.write(
+                    "average number of keyphrases predicted: {}\n".format(
+                        avg_predicted_kps
+                    )
+                )
 
     # Predict
     if training_args.do_predict:
@@ -199,16 +246,13 @@ def train_eval_extraction_model(model_args, data_args, training_args):
 
         assert test_dataset is not None, "test data is none"
         predictions, labels, metrics = trainer.predict(test_dataset)
-        predictions = np.argmax(predictions, axis=2)
+        predictions = np.exp(predictions)
+        predicted_labels = np.argmax(predictions, axis=2)
+        label_score = np.amax(predictions, axis=2) / np.sum(predictions, axis=2)
 
         output_test_results_file = os.path.join(
             training_args.output_dir, "test_results.txt"
         )
-        if trainer.is_world_process_zero():
-            with open(output_test_results_file, "w") as writer:
-                for key, value in sorted(metrics.items()):
-                    logger.info(f"  {key} = {value}")
-                    writer.write(f"{key} = {value}\n")
 
         output_test_predictions_file = os.path.join(
             training_args.output_dir, "test_predictions.csv"
@@ -217,12 +261,61 @@ def train_eval_extraction_model(model_args, data_args, training_args):
             training_args.output_dir, "test_predictions_BIO.txt"
         )
         if trainer.is_world_process_zero():
-            predicted_kps = dataset.get_extracted_keyphrases(
-                predicted_labels=predictions
+            predicted_kps, confidence_scores = dataset.get_extracted_keyphrases(
+                predicted_labels=predicted_labels,
+                split_name="test",
+                label_score=label_score,
+                score_method=training_args.score_aggregation_method,
             )
-            df = pd.DataFrame.from_dict({"extractive_keyphrase": predicted_kps})
+            original_kps = dataset.get_original_keyphrases(split_name="test")
+
+            kp_level_metrics = compute_kp_level_metrics(
+                predictions=predicted_kps, originals=original_kps, do_stem=True
+            )
+            df = pd.DataFrame.from_dict(
+                {
+                    "extracted_keyphrase": predicted_kps,
+                    "original_keyphrases": original_kps,
+                    "confidence_scores": confidence_scores,
+                }
+            )
             df.to_csv(output_test_predictions_file, index=False)
 
             results["extracted_keyprases"] = predicted_kps
+            with open(output_test_results_file, "w") as writer:
+                for key, value in sorted(metrics.items()):
+                    logger.info(f"  {key} = {value}")
+                    writer.write(f"{key} = {value}\n")
+
+                logger.info("Keyphrase level metrics\n")
+                writer.write("Keyphrase level metrics\n")
+
+                for key, value in sorted(kp_level_metrics.items()):
+                    logger.info(f"  {key} = {value}")
+                    writer.write(f"{key} = {value}\n")
+
+                total_keyphrases = sum([len(x) for x in confidence_scores])
+                total_confidence_scores = sum([sum(x) for x in confidence_scores])
+                avg_confidence_scores = total_confidence_scores / total_keyphrases
+                total_examples = len(predicted_kps)
+
+                avg_predicted_kps = total_keyphrases / total_examples
+
+                logger.info(
+                    "average confidence score: {}\n".format(avg_confidence_scores)
+                )
+                logger.info(
+                    "average number of keyphrases predicted: {}\n".format(
+                        avg_predicted_kps
+                    )
+                )
+                writer.write(
+                    "average confidence score: {}\n".format(avg_confidence_scores)
+                )
+                writer.write(
+                    "average number of keyphrases predicted: {}\n".format(
+                        avg_predicted_kps
+                    )
+                )
 
     return results
