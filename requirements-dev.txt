@@ -1,2 +1,15 @@
-transformers
+numpy
+requests
+tqdm>=4.47.0
+regex
+transformers>=4.6.0
 datasets
+scipy
+scikit-learn
+seqeval
+torch
+tensorflow>=2.0
+tensorboard
+pandas
+tokenizers
+pytest
