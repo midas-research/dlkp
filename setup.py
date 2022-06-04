@@ -1,5 +1,4 @@
 from setuptools import find_packages, setup
-import os
 
 
 setup(
@@ -17,7 +16,23 @@ setup(
     },
     package_dir={"": "src"},
     packages=find_packages(where="src"),
-    license="Apache License Version 2.0",
+    license="MIT License",
     include_package_data=True,
     python_requires=">=3.7",
+    install_requires=[
+        "numpy",
+        "requests",
+        "tqdm>=4.47.0",
+        "regex",
+        "transformers>=4.6.0",
+        "datasets",
+        "scipy",
+        "scikit-learn",
+        "seqeval",
+        "torch",
+        "tensorflow>=2.0",
+        "tensorboard",
+        "pandas",
+        "tokenizers",
+    ]
 )
