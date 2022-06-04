@@ -1,7 +1,7 @@
 from dlkp.generation import KGTrainingArguments, KGModelArguments, KGDataArguments
 from dlkp.models import KeyphraseGenerator
 
-model_args = KGModelArguments(model_name_or_path="bart-large")
+model_args = KGModelArguments(model_name_or_path="bloomberg/KeyBART")
 
 data_args = KGDataArguments(
     dataset_name="midas/inspec",
@@ -18,7 +18,7 @@ training_args = KGTrainingArguments(
     output_dir="/data/models/keyphrase/dlkp/inspec/generation/bart-large/finetuned",
     learning_rate=4e-5,
     overwrite_output_dir=True,
-    num_train_epochs=100,
+    num_train_epochs=5,
     per_device_train_batch_size=2,
     per_device_eval_batch_size=2,
     do_train=True,
