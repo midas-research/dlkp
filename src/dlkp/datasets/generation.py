@@ -2,12 +2,12 @@ import os, sys, logging
 from dataclasses import dataclass, field
 from typing import Optional
 from datasets import ClassLabel, load_dataset, Dataset
-from . import KpDatasets
+from . import KPDatasets
 
 logger = logging.getLogger(__name__)
 
 
-class KpGenerationDatasets(KpDatasets):
+class KGDatasets(KPDatasets):
     def __init__(self, data_args_, tokenizer_) -> None:
         super().__init__()
         self.data_args = data_args_

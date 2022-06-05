@@ -1,4 +1,4 @@
-class KpDatasets:
+class KPDatasets:
     def __init__(self) -> None:
         pass
 

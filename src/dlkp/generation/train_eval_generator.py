@@ -20,7 +20,7 @@ from transformers.utils import check_min_version
 from transformers.utils.versions import require_version
 
 from .utils import KGDataArguments, KGModelArguments, KGTrainingArguments
-from ..datasets.generation import KpGenerationDatasets
+from ..datasets.generation import KGDatasets
 from .models import AutoSeq2SeqModelForKpGeneration
 from .data_collators import DataCollatorForSeq2SeqKpGneration
 from .trainers import KpGenerationTrainer
@@ -108,7 +108,7 @@ def train_and_eval_generation_model(model_args, data_args, training_args):
     )
     tokenizer.add_tokens(data_args.keyphrase_sep_token)
     # datasets
-    raw_datasets = KpGenerationDatasets(data_args, tokenizer)
+    raw_datasets = KGDatasets(data_args, tokenizer)
     train_dataset = raw_datasets.get_train_inputs()
     eval_dataset = raw_datasets.get_eval_inputs()
     test_dataset = raw_datasets.get_test_inputs()

@@ -4,7 +4,7 @@ import transformers
 from transformers import AutoConfig, AutoTokenizer, HfArgumentParser
 from .data_collators import DataCollatorForSeq2SeqKpGneration
 from .train_eval_generator import train_and_eval_generation_model
-from ..datasets.generation import KpGenerationDatasets
+from ..datasets.generation import KGDatasets
 from .utils import KGDataArguments, KGModelArguments, KGTrainingArguments
 from .models import AutoSeq2SeqModelForKpGeneration
 from .trainers import KpGenerationTrainer
@@ -54,7 +54,7 @@ class KeyphraseGenerator:
         if isinstance(texts, str):
             texts = [texts]
 
-        self.datasets = KpGenerationDatasets.load_kp_datasets_from_text(texts)
+        self.datasets = KGDatasets.load_kp_datasets_from_text(texts)
 
         def tokenize(ex):
             model_input = self.tokenizer(

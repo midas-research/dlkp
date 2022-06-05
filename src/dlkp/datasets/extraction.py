@@ -1,11 +1,11 @@
 import logging
 from datasets import load_dataset, Dataset
-from . import KpDatasets
+from . import KPDatasets
 
 logger = logging.getLogger(__name__)
 
 
-class KEDatasets(KpDatasets):
+class KEDatasets(KPDatasets):
     def __init__(self, data_args_, tokenizer_) -> None:
         super().__init__()
         self.data_args = data_args_
