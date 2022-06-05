@@ -3,7 +3,7 @@ from setuptools import find_packages, setup
 
 setup(
     name="dlkp",
-    version="0.0.1",
+    version="0.4",
     author="Amardeep Kumar || Debanjan Mahata",
     author_email="kumaramardipsingh@gmail.com",
     description="A deep learning library for keyphrase extraction and generation",
