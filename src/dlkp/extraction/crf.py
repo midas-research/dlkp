@@ -29,12 +29,15 @@ class ConditionalRandomField(torch.nn.Module):
         self,
         num_tags: int,
         label_encoding,
-        idx2tag,
+        id2label,
+        label2id: dict = None,
         include_start_end_transitions: bool = True,
     ) -> None:
         super().__init__()
         self.num_tags = num_tags
-        constraints = allowed_transitions(label_encoding, idx2tag)
+        self.id2label = id2label
+        self.label2id = label2id
+        constraints = allowed_transitions(label_encoding, id2label)
         # transitions[i, j] is the logit for transitioning from state i to state j.
         self.transitions = torch.nn.Parameter(torch.Tensor(num_tags, num_tags))
 
@@ -133,13 +136,9 @@ class ConditionalRandomField(torch.nn.Module):
             score = 0.0
 
         # Add up the scores for the observed transitions and all the inputs but the last
-        # print(mask.shape, tags.shape, logits.shape, sequence_length)
         for i in range(sequence_length - 1):
             # Each is shape (batch_size,)
             current_tag, next_tag = tags[i], tags[i + 1]
-            # print(current_tag, next_tag)
-            # print("tags printiiinggggg")
-            # print(current_tag, next_tag)
             # The scores for transitioning from current_tag to next_tag
             transition_score = self.transitions[current_tag.view(-1), next_tag.view(-1)]
 
@@ -152,6 +151,7 @@ class ConditionalRandomField(torch.nn.Module):
 
         # Transition from last state to "stop" state. To start with, we need to find the last tag
         # for each instance.
+
         last_tag_index = mask.sum(0).long() - 1
         last_tags = tags.gather(0, last_tag_index.view(1, batch_size)).squeeze(0)
 
@@ -178,20 +178,17 @@ class ConditionalRandomField(torch.nn.Module):
         """
         Computes the log likelihood.
         """
-        # mask[tags==-100]=0
         if mask is None:
             mask = torch.ones(*tags.size(), dtype=torch.bool)
         else:
             # The code below fails in weird ways if this isn't a bool tensor, so we make sure.
+            mask[tags == -100] = 0
             mask = mask.to(torch.bool)
-        # print("forward",inputs.shape, tags.shape, mask.shape)
+        tags[tags == -100] = self.label2id[self.id2label[0]]
 
         log_denominator = self._input_likelihood(inputs, mask)
-        # temp_tags= tags
-        # tags[tags==-100]=2
-        # print(tags[0])
+
         log_numerator = self._joint_likelihood(inputs, tags, mask)
-        # tags[mask==0]=-100
         return torch.sum(log_numerator - log_denominator)
 
     def viterbi_tags(

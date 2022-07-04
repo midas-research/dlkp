@@ -98,9 +98,9 @@ def train_eval_extraction_model(model_args, data_args, training_args):
         use_fast=True,
         add_prefix_space=True,
     )
-    if tokenizer.pad_token is None:
+    pad_token_none = tokenizer.pad_token == None
+    if pad_token_none:
         tokenizer.pad_token = tokenizer.eos_token
-        config.pad_token_id = config.eos_token_id
 
     # load keyphrase data
     logging.info("loading kp dataset")
@@ -124,8 +124,10 @@ def train_eval_extraction_model(model_args, data_args, training_args):
     )
 
     config.use_crf = model_args.use_crf
-    config.label_to_id = dataset.label_to_id
-    config.id_to_label = dataset.id_to_label
+    config.label2id = dataset.label_to_id
+    config.id2label = dataset.id_to_label
+    if pad_token_none:
+        config.pad_token_id = config.eos_token_id
 
     # model
     model_type = (
@@ -143,7 +145,7 @@ def train_eval_extraction_model(model_args, data_args, training_args):
     )
 
     # Initialize our Trainer
-    trainer_type = CrfKpExtractionTrainer if model_args.use_crf else KpExtractionTrainer
+    trainer_type = KpExtractionTrainer
     trainer = trainer_type(
         model=model,
         args=training_args,

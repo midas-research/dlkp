@@ -5,13 +5,11 @@ from transformers import TrainingArguments
 
 @dataclass
 class KETrainingArguments(TrainingArguments):
-    return_keyphrase_level_metrics: bool = (
-        field(
-            default=True,
-            metadata={
-                "help": "Whether to return keyphrase level metrics during evaluation or just the BIO tag level."
-            },
-        ),
+    return_keyphrase_level_metrics: bool = field(
+        default=True,
+        metadata={
+            "help": "Whether to return keyphrase level metrics during evaluation or just the BIO tag level."
+        },
     )
 
     score_aggregation_method: bool = field(
