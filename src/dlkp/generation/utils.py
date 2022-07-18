@@ -2,7 +2,7 @@ import logging
 import os
 import sys
 from dataclasses import dataclass, field
-from typing import List, Optional, Tuple
+from typing import List, Optional, Callable
 from transformers import TrainingArguments
 
 
@@ -62,6 +62,12 @@ class KGDataArguments:
     Arguments pertaining to what data we are going to input our model for training and eval.
     """
 
+    preprocess_func: Optional[Callable] = field(
+        default=None,
+        metadata={
+            "help": "a function to preprocess the dataset, which take a dataset object as input and return two columns text_column_name and label_column_name"
+        },
+    )
     dataset_name: Optional[str] = field(
         default=None,
         metadata={"help": "The name of the dataset to use (via the datasets library)."},
@@ -131,7 +137,7 @@ class KGDataArguments:
         },
     )
     pad_to_max_length: bool = field(
-        default=True,
+        default=False,
         metadata={
             "help": "Whether to pad all samples to `max_seq_length`. "
             "If False, will pad the samples dynamically when batching to the maximum length in the batch (which can "
@@ -169,6 +175,12 @@ class KGDataArguments:
         default=20,
         metadata={
             "help": "The total number of n-best predictions to generate when looking for an answer."
+        },
+    )
+    cache_dir: Optional[str] = field(
+        default=None,
+        metadata={
+            "help": "Provide the name of a path for the cache dir. It is used to store the results of the computation."
         },
     )
     num_beams: Optional[int] = field(
