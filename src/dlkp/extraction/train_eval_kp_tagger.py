@@ -31,11 +31,22 @@ import numpy as np
 import pandas as pd
 
 import transformers
-from transformers import AutoConfig, AutoTokenizer, set_seed, HfArgumentParser
+from transformers import (
+    AutoConfig,
+    AutoTokenizer,
+    set_seed,
+    HfArgumentParser,
+    RobertaConfig,
+    BertConfig,
+)
 from transformers.trainer_utils import get_last_checkpoint, is_main_process
 
 from .trainer import KpExtractionTrainer, CrfKpExtractionTrainer
-from .models import AutoModelForKpExtraction, AutoCrfModelforKpExtraction
+from .models import (
+    AutoModelForKpExtraction,
+    BertCrfModelForKpExtraction,
+    RobertaCrfForKpExtraction,
+)
 from .utils import KEDataArguments, KEModelArguments, KETrainingArguments
 from .data_collators import DataCollatorForKpExtraction
 from ..metrics.metrics import compute_metrics, compute_kp_level_metrics
@@ -130,9 +141,13 @@ def train_eval_extraction_model(model_args, data_args, training_args):
         config.pad_token_id = config.eos_token_id
 
     # model
-    model_type = (
-        AutoCrfModelforKpExtraction if model_args.use_crf else AutoModelForKpExtraction
-    )
+    model_type = AutoModelForKpExtraction
+    if model_args.use_crf:
+        if isinstance(config, RobertaConfig):
+            model_type = RobertaCrfForKpExtraction
+        else:
+            model_type = BertCrfModelForKpExtraction
+
     model = model_type.from_pretrained(
         model_args.model_name_or_path,
         config=config,
@@ -145,8 +160,7 @@ def train_eval_extraction_model(model_args, data_args, training_args):
     )
 
     # Initialize our Trainer
-    trainer_type = KpExtractionTrainer
-    trainer = trainer_type(
+    trainer = KpExtractionTrainer(
         model=model,
         args=training_args,
         train_dataset=train_dataset if training_args.do_train else None,

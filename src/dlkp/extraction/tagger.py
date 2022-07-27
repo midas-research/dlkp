@@ -1,6 +1,5 @@
 from typing import List, Union
-import transformers
-from transformers import AutoConfig, AutoTokenizer, HfArgumentParser
+from transformers import AutoConfig, AutoTokenizer, HfArgumentParser, RobertaConfig
 import os
 import sys
 import numpy as np
@@ -8,7 +7,11 @@ import numpy as np
 from ..datasets.extraction import KEDatasets
 from .utils import KEDataArguments, KEModelArguments, KETrainingArguments
 from .trainer import KpExtractionTrainer, CrfKpExtractionTrainer
-from .models import AutoModelForKpExtraction, AutoCrfModelforKpExtraction
+from .models import (
+    AutoModelForKpExtraction,
+    BertCrfModelForKpExtraction,
+    RobertaCrfForKpExtraction,
+)
 from .data_collators import DataCollatorForKpExtraction
 from .train_eval_kp_tagger import train_eval_extraction_model
 
@@ -25,14 +28,17 @@ class KeyphraseTagger:
             use_fast=True,
             add_prefix_space=True,
         )
-        model_type = (
-            AutoCrfModelforKpExtraction if self.use_crf else AutoModelForKpExtraction
-        )
+        model_type = AutoModelForKpExtraction
+        if self.use_crf:
+            if isinstance(self.config, RobertaConfig):
+                model_type = RobertaCrfForKpExtraction
+            else:
+                model_type = BertCrfModelForKpExtraction
 
-        self.model = model_type.from_pretrained(
-            model_name_or_path,
-            config=self.config,
-        )
+            self.model = model_type.from_pretrained(
+                model_name_or_path,
+                config=self.config,
+            )
         self.data_collator = DataCollatorForKpExtraction(self.tokenizer)
 
         self.trainer = (
